@@ -1,0 +1,21 @@
+xampp/
+└── htdocs/
+    └── abeme-modjobuy/
+        ├── index.php
+        ├── admin.php
+        ├── login.php
+        ├── logout.php
+        ├── includes/
+        │   ├── header.php
+        │   ├── footer.php
+        │   ├── db.php
+        │   ├── auth.php
+        │   ├── functions.php
+        │   └── navigation.php
+        ├── css/
+        │   └── style.css
+        ├── js/
+        │   └── script.js
+        ├── img/
+        │   └── logo.png (opcional)
+        └── database.sql

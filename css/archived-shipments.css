@@ -1,0 +1,194 @@
+.archived-groups {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.shipment-group {
+    margin-bottom: 2rem;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.group-header {
+    background: #1976d2;
+    padding: 1rem;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+}
+
+.group-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0;
+    font-size: 1.2rem;
+    color: #ffffff;
+}
+
+.group-toggle {
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.group-header.active .group-toggle {
+    transform: rotate(180deg);
+}
+
+.group-date {
+    color: var(--text);
+    font-size: 0.9rem;
+    margin-left: auto;
+}
+
+.total-shipments {
+    background: var(--primary);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.shipments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.shipments-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.shipments-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.shipments-grid::-webkit-scrollbar-thumb {
+    background: #1976d2;
+    border-radius: 3px;
+}
+
+.shipments-grid::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.shipments-grid::-webkit-scrollbar-track {
+    background: var(--gray-light);
+    border-radius: 3px;
+}
+
+.shipments-grid::-webkit-scrollbar-thumb {
+    background-color: var(--primary);
+    border-radius: 3px;
+}
+
+.shipment-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.shipment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.shipment-code {
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.status-indicator {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-indicator.delivered {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.shipment-details {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.detail-item label {
+    color: #555555;
+    font-weight: 500;
+}
+
+.detail-item span {
+    font-weight: 500;
+    color: #333333;
+}
+
+.shipment-footer {
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.85rem;
+    color: #666666;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .archived-groups {
+        padding: 0.5rem;
+    }
+
+    .shipments-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .group-header h2 {
+        font-size: 1rem;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .group-date, .total-shipments {
+        font-size: 0.8rem;
+    }
+
+    .shipment-card {
+        padding: 0.75rem;
+    }
+
+    .detail-item {
+        font-size: 0.85rem;
+    }
+}
+
+/* For screens smaller than 480px */
+@media (max-width: 480px) {
+    .shipments-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}

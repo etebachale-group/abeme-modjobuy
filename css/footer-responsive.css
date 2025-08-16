@@ -1,0 +1,154 @@
+/* Estilos base del footer */
+.footer {
+    background-color: var(--primary);
+    color: var(--text-light);
+}
+
+/* Estilos para desktop */
+.footer-desktop {
+    padding: 9px 0; /* Reduced 40% from 15px */
+    display: block;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px;
+    gap: 20px;
+}
+
+/* Estilos para la navegación móvil */
+.mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--primary);
+    padding: 5px 0; /* Reduced 40% from 8px */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-light);
+    text-decoration: none;
+    flex: 1;
+    padding: 5px 0; /* Reduced 40% from 8px */
+    transition: all 0.3s ease;
+}
+
+.mobile-nav-item i {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+.mobile-nav-item span {
+    font-size: 0.8rem;
+}
+
+.footer-col {
+    flex: 1;
+}
+
+.footer-title {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.footer-contact {
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.footer-social {
+    display: flex;
+    gap: 15px;
+}
+
+.footer-social a {
+    color: var(--text-light);
+    font-size: 1.5rem;
+    transition: color 0.3s ease;
+}
+
+.footer-social a:hover {
+    color: var(--accent);
+}
+
+.footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.footer-link {
+    color: var(--text-light);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+    color: var(--accent);
+}
+
+/* Estilos responsive para tablets y móviles */
+@media screen and (max-width: 768px) {
+    .footer-desktop {
+        display: none;
+    }
+
+    .mobile-nav {
+        display: flex;
+        justify-content: space-around;
+    }
+
+    /* Ajustar el padding del main para que no se solape con la barra de navegación móvil */
+    main {
+        padding-bottom: 80px;
+    }
+}
+
+/* Ajustes para móviles pequeños */
+@media screen and (max-width: 480px) {
+    .mobile-nav-item i {
+        font-size: 1.2rem;
+        margin-bottom: 2px;
+    }
+
+    .mobile-nav-item span {
+        font-size: 0.75rem;
+    }
+
+    .mobile-nav {
+        padding: 3px 0; /* Reduced 40% from 5px */
+    }
+
+    .mobile-nav-item {
+        padding: 4px 0; /* Reduced 40% from 6px */
+    }
+
+    /* Ajustar el padding del main para la barra más pequeña */
+    main {
+        padding-bottom: 65px;
+    }
+
+    /* Agregar efecto activo para mejorar la experiencia táctil */
+    .mobile-nav-item:active {
+        background-color: var(--primary-dark);
+    }
+}
+
+/* Aplicar color especial al enlace activo */
+.mobile-nav-item.active {
+    color: var(--accent);
+}

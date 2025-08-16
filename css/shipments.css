@@ -1,0 +1,97 @@
+.action-btn {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 0 2px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: none;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background-color: #f0f0f0;
+    transform: scale(1.1);
+}
+
+.pdf-btn { color: #dc3545; }
+.edit-btn { color: #007bff; }
+.save-btn { color: #28a745; }
+.delete-btn { color: #dc3545; }
+
+/* Estilos para el modo de edición */
+.editable .edit-input,
+.editable .edit-group {
+    display: none;
+}
+
+tr.editing .edit-input,
+tr.editing .edit-group {
+    display: block !important;
+}
+
+tr.editing .display-text {
+    display: none !important;
+}
+
+tr.editing .save-btn {
+    display: inline-block !important;
+}
+
+tr.editing .edit-btn {
+    display: none !important;
+}
+
+/* Estilos para las notificaciones */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+    animation: slideIn 0.5s ease-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.notification.success {
+    background-color: #28a745;
+}
+
+.notification.error {
+    background-color: #dc3545;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Estilos para los campos editables */
+.edit-input {
+    width: 100%;
+    padding: 8px;
+    margin: 2px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+/* Estilo para hacer visible el botón de guardar cuando está en modo edición */
+tr:not(.editing) .save-btn {
+    display: none !important;
+}

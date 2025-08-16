@@ -1,0 +1,99 @@
+/* Estilos móviles para las tablas de envíos */
+@media (max-width: 768px) {
+    .group-container .table-responsive {
+        border: none;
+        margin: 0;
+    }
+
+    .group-container .table {
+        font-size: 14px;
+    }
+
+    .group-container .table th,
+    .group-container .table td {
+        padding: 8px;
+    }
+
+    .group-container td:first-child {
+        font-family: monospace;
+        font-size: 13px;
+        color: var(--primary);
+    }
+
+    .group-container .table td {
+        white-space: nowrap;
+        min-width: 120px;
+    }
+
+    .group-container .status-select {
+        padding: 4px;
+        font-size: 13px;
+        width: 110px;
+    }
+
+    /* Mejorar la experiencia de scroll horizontal */
+    .group-container .table-responsive {
+        position: relative;
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin: 0 -0.5rem;
+        padding: 0 0.5rem;
+        scrollbar-width: thin;
+    }
+
+    .group-container .table-responsive::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .group-container .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .group-container .table-responsive::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    /* Ajustes específicos para el contenedor del grupo */
+    .group-container {
+        margin: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .group-container .group-header {
+        padding: 0.75rem;
+    }
+
+    .group-container .group-date {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .group-container .group-stats {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .group-container .stat-item {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 3px;
+    }
+
+    .group-container .notify-arrival-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.875rem;
+        margin-left: 0.25rem;
+    }
+
+    /* Ajustes para la información del contenido */
+    .group-container .group-content {
+        padding: 0.5rem 0;
+    }
+
+    .group-container .table td {
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+}

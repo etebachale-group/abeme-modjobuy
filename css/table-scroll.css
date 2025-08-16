@@ -1,0 +1,120 @@
+.recent-shipments-container {
+    margin: 20px 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.table-scroll-container {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: #2c3e50 #f1f1f1;
+    background: #ffffff;
+}
+
+/* Estilos para la barra de desplazamiento en WebKit (Chrome, Safari) */
+.table-scroll-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Mantener el encabezado de la tabla fijo */
+.table-scroll-container table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-scroll-container thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8f9fa;
+}
+
+.table-scroll-container th {
+    background: #2c3e50;
+    color: white;
+    border-bottom: 2px solid #34495e;
+    padding: 12px 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    letter-spacing: 0.5px;
+    transition: background-color 0.3s ease;
+}
+
+.table-scroll-container th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.table-scroll-container th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.table-scroll-container td {
+    border-bottom: 1px solid #eef2f7;
+    padding: 12px 8px;
+    color: #2c3e50;
+}
+
+/* Animación suave al hacer hover en las filas */
+.table-scroll-container tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table-scroll-container tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.table-scroll-container tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+/* Asegurar que los bordes de la tabla sean consistentes */
+.table-scroll-container table {
+    margin: 0;
+    background: white;
+}
+
+.table-scroll-container th:first-child,
+.table-scroll-container td:first-child {
+    padding-left: 15px;
+}
+
+.table-scroll-container th:last-child,
+.table-scroll-container td:last-child {
+    padding-right: 15px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .table-scroll-container {
+        max-height: 350px;
+    }
+}
+
+@media (max-width: 480px) {
+    .table-scroll-container {
+        max-height: 300px;
+    }
+}

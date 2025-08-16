@@ -1,0 +1,1 @@
+ALTER TABLE shipments ADD advance_payment DECIMAL(10,2) DEFAULT 0.00;

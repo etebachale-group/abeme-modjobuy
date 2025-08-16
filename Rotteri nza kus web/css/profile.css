@@ -1,0 +1,164 @@
+.profile-container {
+    max-width: 1200px;
+    margin: clamp(2rem, 5vw, 4rem) auto;
+    padding: 0 clamp(10px, 2vw, 30px);
+}
+
+.profile-header {
+    background: linear-gradient(45deg, var(--accent1), var(--accent1-hover));
+    color: var(--primary-dark);
+    padding: clamp(2rem, 5vw, 3rem);
+    border-radius: 10px;
+    margin-bottom: clamp(2rem, 5vw, 3rem);
+    text-align: center;
+}
+
+.profile-header h1 {
+    margin: 0;
+    font-size: clamp(2rem, 3.5vw, 2.5rem);
+    font-weight: 700;
+}
+
+.profile-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: clamp(1rem, 3vw, 2rem);
+}
+
+@media (max-width: 992px) {
+    .profile-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.profile-info, .profile-orders {
+    background: rgba(255, 255, 255, 0.05);
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    border-radius: 10px;
+    border: 1px solid rgba(240, 240, 240, 0.1);
+}
+
+.profile-info h2, .profile-orders h2 {
+    margin-top: 0;
+    color: var(--primary-light);
+    border-bottom: 2px solid var(--accent1);
+    padding-bottom: 1rem;
+    margin-bottom: clamp(1.5rem, 2.5vw, 2rem);
+    font-size: clamp(1.3rem, 1.8vw, 1.5rem);
+}
+
+.profile-details {
+    margin-bottom: clamp(1.5rem, 2.5vw, 2rem);
+}
+
+.profile-detail label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--accent2);
+    font-size: clamp(0.9rem, 1.1vw, 1rem);
+}
+
+.profile-detail p {
+    font-size: clamp(1rem, 1.2vw, 1.1rem);
+}
+
+.btn-primary {
+    background: var(--accent1);
+    color: var(--primary-dark);
+    border: none;
+    padding: clamp(0.8rem, 1.5vw, 1rem) clamp(1.5rem, 3vw, 1.5rem);
+    font-size: clamp(1rem, 1.3vw, 1rem);
+    font-weight: 600;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background: var(--accent1-hover);
+}
+
+.orders-accordion .order-item {
+    border: 1px solid rgba(240, 240, 240, 0.1);
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.orders-accordion .order-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(1rem, 2vw, 1.5rem);
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.orders-accordion .order-item-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.orders-accordion .order-item-body {
+    padding: clamp(1rem, 2vw, 1.5rem);
+    display: none;
+    border-top: 1px solid rgba(240, 240, 240, 0.1);
+}
+
+.orders-accordion .order-item-body ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.orders-accordion .order-item-body li {
+    margin-bottom: 1rem;
+    font-size: clamp(0.9rem, 1.1vw, 1rem);
+}
+
+.order-status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: clamp(0.7rem, 0.9vw, 0.8rem);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-confirmed {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-processing {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-shipped {
+    background: #bee5eb;
+    color: #0c5460;
+}
+
+.status-delivered {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.no-orders {
+    text-align: center;
+    padding: clamp(2rem, 5vw, 4rem);
+    color: rgba(240, 240, 240, 0.7);
+    font-size: clamp(1rem, 1.5vw, 1.2rem);
+}

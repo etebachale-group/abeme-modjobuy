@@ -1,0 +1,65 @@
+/* Mejoras de visibilidad para formularios */
+.form-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Estilo específico para el botón de notificación */
+.notify-arrival-btn {
+    font-weight: 600;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.notify-arrival-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(255,255,255,0));
+    pointer-events: none;
+}
+
+.notify-arrival-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Mejoras para campos de formulario */
+.form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(251, 176, 52, 0.2);
+}
+
+/* Fondo sutil para mejorar visibilidad */
+.form-section {
+    background-color: rgba(237, 240, 243, 0.8);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Mejora de contraste para las etiquetas de estado */
+.status {
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* Mejora de contraste para los inputs deshabilitados */
+input:disabled,
+select:disabled {
+    background-color: var(--gray-light);
+    border-color: var(--border);
+    color: var(--text);
+    opacity: 0.8;
+}

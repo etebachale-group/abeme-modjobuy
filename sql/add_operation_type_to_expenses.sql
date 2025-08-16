@@ -1,0 +1,1 @@
+ALTER TABLE expenses ADD COLUMN operation_type VARCHAR(20) DEFAULT 'subtract';

@@ -1,0 +1,217 @@
+/* Estilos para formularios */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+textarea,
+select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+    color: var(--text);
+    margin-top: 0.3rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Estilos responsive para formularios */
+@media screen and (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    textarea,
+    select {
+        padding: 0.6rem;
+        font-size: 0.95rem;
+        margin-top: 0.2rem;
+    }
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(251, 176, 52, 0.1);
+    background-color: #ffffff;
+}
+
+label {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Estilo para campos obligatorios */
+.required::after {
+    content: '*';
+    color: var(--accent);
+    margin-left: 4px;
+}
+
+/* Estilos para mensajes de error */
+.form-error {
+    color: var(--danger);
+    font-size: 0.875rem;
+    margin-top: 0.2rem;
+}
+
+/* Estilos adicionales para formularios en móvil */
+@media screen and (max-width: 768px) {
+    .form-container {
+        padding: 15px;
+        margin: 10px 0;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    label {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .form-error {
+        font-size: 0.8rem;
+    }
+
+    .btn-submit {
+        padding: 0.6rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .form-col {
+        width: 100%;
+    }
+}
+
+/* Ajustes para pantallas muy pequeñas */
+@media screen and (max-width: 480px) {
+    .form-container {
+        padding: 12px;
+        margin: 8px 0;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    textarea,
+    select {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    label {
+        font-size: 0.85rem;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 0.6rem;
+    }
+}
+
+/* Contenedor de formulario */
+.form-container {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(26, 77, 46, 0.1);
+    max-width: 600px;
+    margin: 2rem auto;
+    border: 2px solid var(--primary);
+}
+
+/* Estilos para la sección de descuento */
+.discount-section {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.discount-section .form-label {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.discount-input {
+    max-width: 200px;
+}
+
+.form-help {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.discount-display {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.discount-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.discount-item:last-child {
+    border-bottom: none;
+    font-weight: bold;
+}
+
+.discount-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.discount-value {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Responsive design for discount section */
+@media (max-width: 768px) {
+    .discount-item {
+        flex-direction: column;
+        gap: 3px;
+    }
+    
+    .discount-label {
+        font-size: 14px;
+    }
+    
+    .discount-value {
+        font-size: 16px;
+        font-weight: 700;
+    }
+    
+    .discount-input {
+        max-width: 100%;
+    }
+}

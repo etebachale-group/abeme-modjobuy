@@ -1,0 +1,258 @@
+.shipment-groups {
+    margin-top: 2rem;
+}
+
+.no-shipments-message {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--gray-light);
+    border-radius: 8px;
+    margin: 2rem 0;
+    color: var(--text);
+}
+
+.no-shipments-message i {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.no-shipments-message p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.no-shipments-message p:last-child {
+    font-size: 0.9rem;
+    color: var(--text);
+    opacity: 0.8;
+}
+
+.group-container {
+    margin-bottom: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.group-header {
+    background: var(--primary-light);
+    padding: 1rem;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: background-color 0.3s ease;
+}
+
+.group-header:hover {
+    background: var(--primary-lighter);
+}
+
+.group-content {
+    transition: max-height 0.3s ease-out;
+    overflow: hidden;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+}
+
+.hidden {
+    display: none;
+}
+
+.group-header .fa-chevron-down,
+.group-header .fa-chevron-up {
+    transition: transform 0.3s ease;
+}
+
+.group-header.active .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.group-info {
+    flex: 1;
+}
+
+.group-date {
+    font-weight: 600;
+    color: var(--text-dark);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.group-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.stat-item {
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: var(--text);
+}
+
+/* Estilos móviles específicos para group-container */
+@media (max-width: 768px) {
+    .group-container {
+        margin: 0.5rem;
+    }
+
+    .group-header {
+        padding: 0.75rem;
+    }
+
+    .group-stats {
+        gap: 0.25rem;
+    }
+
+    .stat-item {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+        white-space: nowrap;
+    }
+
+    .notify-arrival-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.875rem;
+    }
+
+    .table-responsive {
+        margin: 0;
+        padding: 0.5rem;
+    }
+
+    .group-container .table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .group-container .table th,
+    .group-container .table td {
+        white-space: nowrap;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .group-container .status-select {
+        min-width: 110px;
+        font-size: 0.875rem;
+        padding: 0.3rem;
+    }
+
+    .group-info {
+        max-width: calc(100% - 40px);
+    }
+
+    .group-date {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+}
+
+.group-header {
+    background: var(--primary);
+    color: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.group-header:hover {
+    background: var(--primary-dark);
+}
+
+.group-info {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.group-date {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.group-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+}
+
+.group-content {
+    margin-bottom: 2rem;
+    background: white;
+    border-radius: 6px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.group-content.hidden {
+    display: none;
+}
+
+.status-select {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+}
+
+.status-cell {
+    font-weight: 500;
+}
+
+.status-cell.pending { color: var(--warning); }
+.status-cell.ontheway { color: var(--info); }
+.status-cell.arrived { color: var(--success); }
+.status-cell.delay { color: var(--danger); }
+.status-cell.delivered { color: var(--success); }
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 2rem;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+    background: var(--success);
+}
+
+.notification.error {
+    background: var(--danger);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
