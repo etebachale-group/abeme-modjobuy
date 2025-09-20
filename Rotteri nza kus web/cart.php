@@ -5,17 +5,25 @@ require_once 'includes/auth.php';
 // Check if user is authenticated
 requireAuth();
 
-// Get user's cart items from database
-$stmt = $pdo->prepare("SELECT c.id, c.product_id, c.quantity, p.name, p.price, p.image_url, p.is_active FROM cart c LEFT JOIN products p ON c.product_id = p.id WHERE c.user_id = ? ORDER BY c.created_at DESC");
-$stmt->execute([currentUserId()]);
-$cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Get user's cart items from database (defensive)
+$cartItems = [];
+$loadError = null;
+try {
+    $stmt = $pdo->prepare("SELECT c.id, c.product_id, c.quantity, p.name, p.price, p.image_url, p.is_active FROM cart c LEFT JOIN products p ON c.product_id = p.id WHERE c.user_id = ? ORDER BY c.created_at DESC");
+    $stmt->execute([currentUserId()]);
+    $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $loadError = 'No se pudo cargar el carrito en este momento.';
+}
 
 $notifications = [];
 $validCartItems = [];
 
 // Validate cart items
 foreach ($cartItems as $item) {
-    if (!$item['name'] || !$item['is_active']) {
+    $nameMissing = empty($item['name']);
+    $inactive = (isset($item['is_active']) && (int)$item['is_active'] === 0);
+    if ($nameMissing || $inactive) {
         // Product does not exist or is inactive, remove from cart
         $stmt = $pdo->prepare("DELETE FROM cart WHERE id = ?");
         $stmt->execute([$item['id']]);
@@ -46,6 +54,10 @@ include 'includes/header.php';
         <p>Revisa y gestiona tus productos seleccionados</p>
     </div>
 
+    <?php if (!empty($loadError)): ?>
+        <div class="alert alert-danger"><?php echo htmlspecialchars($loadError); ?></div>
+    <?php endif; ?>
+    
     <?php if (!empty($notifications)): ?>
         <div class="alert alert-info">
             <?php foreach ($notifications as $notification): ?>
@@ -115,3 +127,16 @@ include 'includes/header.php';
 </div>
 
 <?php include 'includes/footer.php'; ?>
+<script>
+(function(){
+    async function isAuthed(){ try{ const r=await fetch('api/is_authenticated.php'); const j=await r.json(); return !!j.authenticated; }catch{ return false; } }
+    async function syncLocalCart(){
+        const cart=JSON.parse(localStorage.getItem('cart')||'[]');
+        if(!cart.length) return;
+        try{ await fetch('api/sync_cart.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ items: cart }) }); localStorage.removeItem('cart'); }catch(e){ console.warn('Sync failed', e); }
+        // reload to reflect server cart
+        window.location.reload();
+    }
+    isAuthed().then(a=>{ if(a) syncLocalCart(); });
+})();
+</script>

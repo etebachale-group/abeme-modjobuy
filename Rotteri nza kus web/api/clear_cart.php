@@ -13,7 +13,7 @@ try {
     $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
     $stmt->execute([currentUserId()]);
     
-    echo json_encode(['success' => true, 'message' => 'Cart cleared successfully.']);
+    echo json_encode(['success' => true, 'message' => 'Cart cleared successfully.', 'count' => 0]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 }

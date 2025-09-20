@@ -1,14 +1,16 @@
 // Función para inicializar el gráfico de beneficios
 document.addEventListener('DOMContentLoaded', function() {
-    // Datos de los socios y sus porcentajes
-    const partners = {
-        'FERNANDO CHALE': 18,
-        'MARIA CARMEN NSUE': 18,
-        'GENEROSA ABEME': 30,
-        'MARIA ISABEL': 8,
-        'CAJA': 16,
-        'FONDOS DE SOCIOS': 10
-    };
+    // Datos de los socios y sus porcentajes (preferir window.partners si viene del servidor)
+    const partners = (typeof window !== 'undefined' && window.partners)
+        ? window.partners
+        : {
+            'FERNANDO CHALE': 18,
+            'MARIA CARMEN NSUE': 18,
+            'GENEROSA ABEME': 30,
+            'MARIA ISABEL': 8,
+            'CAJA': 16,
+            'FONDOS DE SOCIOS': 10
+        };
 
     // Inicializar el gráfico de beneficios
     initBenefitsChart(partners);
@@ -134,43 +136,15 @@ function viewDetails(partnerName) {
     modal.offsetHeight;
     modal.classList.add('show');
 
-    // Primero verificamos y actualizamos la estructura de la tabla
-    fetch('api/update_table_structure.php')
-        .then(response => response.json())
-        .then(() => {
-            // Luego verificamos las tablas completas
-            return fetch('api/check_partner_tables.php');
-        })
-        .then(response => response.json())
-        .then(() => {
-            // Finalmente obtenemos los detalles del socio
-            return fetch(`api/partner_details.php?partner=${encodeURIComponent(partnerName)}`);
-        })
-        .then(response => response.json())
-        .then(details => {
-            if (details.error) {
-                modalBody.innerHTML = `
-                    <div class="partner-details">
-                        <div class="error-message">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <span>${details.error}</span>
-                        </div>
-                    </div>`;
-                return;
+    // Obtener solo saldos vía API unificada
+    fetch(`api/get_wallet_balances.php?partner=${encodeURIComponent(partnerName)}`)
+        .then(async (response) => {
+            const txt = await response.text();
+            let j; try { j = JSON.parse(txt); } catch { throw new Error(`Respuesta no válida: ${txt.slice(0,200)}`); }
+            if (!response.ok || !j.success) {
+                throw new Error(j.message || 'No se pudo obtener saldos');
             }
-
-            const formattedDate = details.joinDate ? new Date(details.joinDate).toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }) : 'No especificado';
-
-            const lastPaymentDate = details.lastPayment ? new Date(details.lastPayment).toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }) : 'No especificado';
-
+            const d = j.data || { total_earnings: 0, current_balance: 0 };
             modalBody.innerHTML = `
                 <div class="partner-details">
                     <div class="partner-header">
@@ -179,46 +153,18 @@ function viewDetails(partnerName) {
                     <div class="partner-summary">
                         <div class="summary-card">
                             <h4>Ganancias Totales</h4>
-                            <p>XAF ${Number(details.totalEarnings).toLocaleString('es-ES')}</p>
+                            <p>XAF ${Number(d.total_earnings || 0).toLocaleString('es-ES')}</p>
                         </div>
                         <div class="summary-card">
                             <h4>Balance Actual</h4>
-                            <p>XAF ${Number(details.currentBalance).toLocaleString('es-ES')}</p>
+                            <p>XAF ${Number(d.current_balance || 0).toLocaleString('es-ES')}</p>
                         </div>
                     </div>
-                </div>
-
-                <div class="payment-history">
-                    <h4>Historial de Pagos</h4>
-                    <div class="table-responsive">
-                        <table id="paymentsHistory" class="table">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Monto</th>
-                                    <th>Estado</th>
-                                    <th>Balance Anterior</th>
-                                    <th>Nuevo Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${details.paymentHistory.payments.map(payment => `
-                                    <tr class="${payment.confirmed ? 'confirmed' : 'pending'}">
-                                        <td>${new Date(payment.payment_date).toLocaleDateString('es-ES')}</td>
-                                        <td>XAF ${Number(payment.amount).toLocaleString('es-ES')}</td>
-                                        <td><span class="status-badge ${payment.confirmed ? 'confirmed' : 'pending'}">${payment.confirmed ? 'Confirmado' : 'Pendiente'}</span></td>
-                                        <td>XAF ${Number(payment.previous_balance).toLocaleString('es-ES')}</td>
-                                        <td>XAF ${Number(payment.new_balance).toLocaleString('es-ES')}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
+                </div>`;
         })
-        .catch(() => {
-            modalBody.innerHTML = `<div class="partner-details"><span style='color:red;'>Error al cargar los datos</span></div>`;
+        .catch((e) => {
+            console.error(e);
+            modalBody.innerHTML = `<div class="partner-details"><span style='color:red;'>${e.message || 'Error al cargar los datos'}</span></div>`;
         });
 
     modal.style.display = 'block';
@@ -255,31 +201,47 @@ function requestPayment(partnerName, amount) {
     }, 1000); // 1 segundo de retraso
 }
 
-// Función para confirmar pago
+// Función para depositar al monedero del socio (convierte saldo pendiente en saldo de monedero)
 function confirmPayment(partnerName, amountPaid) {
-    if (!confirm(`¿Estás seguro de que quieres confirmar el pago de XAF ${amountPaid.toLocaleString('es-GQ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} a ${partnerName}?`)) {
-        return; // User cancelled
+    if (!confirm(`¿Depositar XAF ${amountPaid.toLocaleString('es-GQ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} al monedero de ${partnerName}?`)) {
+        return; // cancelado
     }
 
-    // Make an AJAX request to confirm_payment.php
-    fetch('confirm_payment.php', {
+    fetch('api/deposit_to_wallet.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `partner_name=${encodeURIComponent(partnerName)}&amount_paid=${amountPaid}`
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+        body: `partner_name=${encodeURIComponent(partnerName)}&amount=${amountPaid}&notes=${encodeURIComponent('Depósito desde Beneficios')}`,
+        credentials: 'same-origin',
+        cache: 'no-cache'
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload(); // Reload the page to show updated balances
-        } else {
-            alert('Error al confirmar el pago: ' + data.message);
+    .then(async (res) => {
+        const txt = await res.text();
+        let data = null;
+        try { data = JSON.parse(txt); } catch {}
+        if (!res.ok || !data || !data.success) {
+            const msg = data && data.message ? data.message : (txt ? txt.slice(0,200) : 'No se pudo depositar');
+            throw new Error(`HTTP ${res.status} ${res.statusText} | ${msg}`);
         }
+        return data;
     })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Ocurrió un error al procesar la solicitud.');
+    .then(async () => {
+        // Refrescar solo el saldo del socio afectado
+        try {
+            const res2 = await fetch(`api/get_wallet_balances.php?partner=${encodeURIComponent(partnerName)}`, { credentials: 'same-origin', cache: 'no-cache' });
+            const j2 = await res2.json();
+            if (j2 && j2.success && j2.data) {
+                const fmt = (n) => 'XAF ' + Number(n).toLocaleString('es-GQ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const nodes = document.querySelectorAll(`[data-partner="${partnerName.replace(/"/g, '\\"')}"]`);
+                nodes.forEach(el => { el.textContent = fmt(j2.data.current_balance || 0); });
+                alert('Depósito realizado al monedero');
+                return;
+            }
+        } catch (_) { /* fallback to reload below */ }
+        // Si falla la actualización en sitio, recargar la página
+        location.reload();
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Error: ' + (err && err.message ? err.message : 'Error de red al depositar'));
     });
 }

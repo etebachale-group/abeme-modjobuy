@@ -4,7 +4,7 @@ require_once 'includes/auth.php';
 require_once 'includes/functions.php';
 
 // Solo verificar que el usuario esté autenticado
-requireAuth();
+requireAdmin();
 
 // ---- Procesamiento de Formularios ----
 
@@ -164,31 +164,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_shipment'])) {
     }
 }
 
-// Procesar formulario para añadir administrador
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_admin'])) {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-
-    if (createAdmin($pdo, $email, $password)) {
-        $success = "Administrador añadido correctamente.";
-    } else {
-        $error = "Error al añadir el administrador.";
-    }
-}
-
-// Procesar eliminación de administrador
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_admin'])) {
-    $admin_id = $_POST['admin_id'];
-    if (deleteAdmin($pdo, $admin_id)) {
-        $success = "Administrador eliminado correctamente.";
-    } else {
-        $error = "No se pudo eliminar el administrador. No se puede eliminar al administrador principal.";
-    }
-}
+// Nota: La gestión de roles/usuarios se realiza ahora desde Registrar Socio.
 
 // ---- Obtención de Datos ----
 $grouped_shipments = getShipmentsByGroup($pdo);
-$admins = getAllAdmins($pdo);
+// $admins = getAllAdmins($pdo); // Ya no se muestra la gestión de administradores aquí
 
 // Definir los estados disponibles y sus etiquetas
 $status_options = [
@@ -480,54 +460,7 @@ $status_options = [
         </table>
     </section>
 
-    <section class="admin-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Gestión de Administradores</h2>
-
-        <h3 style="margin-bottom: 1.5rem;">Añadir Nuevo Administrador</h3>
-        <form id="new-admin-form" method="POST">
-            <input type="hidden" name="add_admin" value="1">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="admin-email">Email del Administrador *</label>
-                    <input type="email" id="admin-email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="admin-password">Contraseña *</label>
-                    <input type="password" id="admin-password" name="password" required>
-                </div>
-            </div>
-            <button type="submit" class="btn">Añadir Administrador</button>
-        </form>
-
-        <h3 style="margin: 2.5rem 0 1.5rem;">Administradores Actuales</h3>
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Email</th>
-                    <th>Fecha de Creación</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($admins as $admin): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($admin['id']); ?></td>
-                        <td><?php echo htmlspecialchars($admin['email']); ?></td>
-                        <td><?php echo htmlspecialchars($admin['created_at']); ?></td>
-                        <td>
-                            <?php if ($admin['id'] != 1): // No permitir eliminar al admin principal ?>
-                                <form method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a este administrador?');">
-                                    <input type="hidden" name="admin_id" value="<?php echo $admin['id']; ?>">
-                                    <button type="submit" name="delete_admin" class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
-                                </form>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
+    <!-- Gestión de administradores movida a Registrar Socio -->
 
 
 <?php include 'includes/footer.php'; ?>
