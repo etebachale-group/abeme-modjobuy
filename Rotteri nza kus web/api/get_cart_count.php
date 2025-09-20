@@ -4,6 +4,17 @@ require_once '../includes/auth.php';
 
 header('Content-Type: application/json');
 
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS cart (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX(user_id), INDEX(product_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (Exception $e) { /* ignore */ }
+
 if (!isAuthenticated()) {
     echo json_encode(['success' => true, 'count' => 0]);
     exit;

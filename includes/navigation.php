@@ -7,6 +7,7 @@
         <?php if(isAuthenticated()): ?>
             <li><a href="admin.php" class="nav-link"><i class="fas fa-cog"></i> Administración</a></li>
             <li><a href="archived_shipments.php" class="nav-link"><i class="fas fa-archive"></i> Archivados</a></li>
+            <li><a href="caja.php" class="nav-link<?php echo basename($_SERVER['PHP_SELF']) == 'caja.php' ? ' active' : ''; ?>"><i class="fas fa-vault"></i> Caja</a></li>
             <li><a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión (<?php echo currentUser(); ?>)</a></li>
         <?php else: ?>
             <li><a href="login.php" class="nav-link"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a></li>

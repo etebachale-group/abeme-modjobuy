@@ -8,83 +8,190 @@ requireAdmin();
 // Get admin ID
 $admin_id = getCurrentAdminId($pdo);
 
+// Current user id
+$current_user_id = currentUserId();
+
 // Get admin info
 $stmt = $pdo->prepare("SELECT a.*, u.first_name, u.last_name, u.email FROM admins a JOIN users u ON a.user_id = u.id WHERE a.id = ?");
 $stmt->execute([$admin_id]);
-$admin = $stmt->fetch(PDO::FETCH_ASSOC);
+$admin = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+if (!$admin) {
+    // Graceful fallback placeholder structure
+    $admin = [
+        'user_id' => null,
+        'company_name' => '',
+        'first_name' => '',
+        'last_name' => '',
+        'email' => ''
+    ];
+}
 
 $error = '';
 $success = '';
+$hasAdminProfile = !empty($admin_id) && !empty($admin) && !empty($admin['user_id']);
+
+// Auto-clean orphan uploads once per day on GET
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    try {
+        $uploadsDir = __DIR__ . '/../uploads';
+        $real = realpath($uploadsDir);
+        if ($real !== false && is_dir($real)) {
+            $varDir = __DIR__ . '/../var';
+            if (!is_dir($varDir)) { @mkdir($varDir, 0775, true); }
+            $marker = $varDir . '/last_uploads_cleanup.txt';
+            $now = time();
+            $last = is_file($marker) ? (int)@file_get_contents($marker) : 0;
+            if ($now - $last > 86400) {
+                // Build referenced set
+                $referenced = [];
+                try {
+                    $rs = $pdo->query("SELECT image_url FROM products WHERE image_url LIKE 'uploads/%'");
+                    while ($row = $rs->fetch(PDO::FETCH_ASSOC)) {
+                        if (!empty($row['image_url'])) { $referenced[$row['image_url']] = true; }
+                    }
+                } catch (Exception $ignore) {}
+                // Scan and delete
+                foreach (scandir($real) as $f) {
+                    if ($f === '.' || $f === '..' || $f === '.htaccess' || $f === 'index.html') continue;
+                    $full = $real . DIRECTORY_SEPARATOR . $f;
+                    if (!is_file($full)) continue;
+                    $rel = 'uploads/' . $f;
+                    if (!isset($referenced[$rel])) { @unlink($full); }
+                }
+                @file_put_contents($marker, (string)$now);
+            }
+        }
+    } catch (Exception $e) {
+        // silent
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $company_name = trim($_POST['company_name'] ?? '');
-    $first_name = trim($_POST['first_name'] ?? '');
-    $last_name = trim($_POST['last_name'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $current_password = $_POST['current_password'] ?? '';
-    $new_password = $_POST['new_password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
-    
-    // Validation
-    if (empty($company_name) || empty($first_name) || empty($last_name) || empty($email)) {
-        $error = 'Por favor complete todos los campos obligatorios';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Por favor ingrese un correo electrónico válido';
+    // CSRF validation for all POST actions
+    if (!csrf_validate($_POST['csrf_token'] ?? '')) {
+        $error = 'Token CSRF inválido';
     } else {
-        // Update admin info
-        $pdo->beginTransaction();
+    if (isset($_POST['create_admin_profile'])) {
+        // Create admin profile if missing
         try {
-            // Update user info
-            $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ?");
-            $stmt->execute([$first_name, $last_name, $email, $admin['user_id']]);
-            
-            // Update admin info
-            $stmt = $pdo->prepare("UPDATE admins SET company_name = ? WHERE id = ?");
-            $stmt->execute([$company_name, $admin_id]);
-            
-            // Update password if provided
-            if (!empty($new_password)) {
-                if (empty($current_password)) {
-                    $error = 'Por favor ingrese su contraseña actual para cambiarla';
-                } elseif (strlen($new_password) < 6) {
-                    $error = 'La nueva contraseña debe tener al menos 6 caracteres';
-                } elseif ($new_password !== $confirm_password) {
-                    $error = 'Las contraseñas nuevas no coinciden';
-                } else {
-                    // Verify current password
-                    $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
-                    $stmt->execute([$admin['user_id']]);
-                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-                    
-                    if (!password_verify($current_password, $user['password'])) {
-                        $error = 'La contraseña actual es incorrecta';
-                    } else {
-                        // Update password
-                        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                        $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-                        $stmt->execute([$hashed_password, $admin['user_id']]);
-                        $success = 'Información actualizada exitosamente';
-                    }
-                }
+            $pdo->exec("CREATE TABLE IF NOT EXISTS admins (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                company_name VARCHAR(255) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $check = $pdo->prepare('SELECT id FROM admins WHERE user_id = ?');
+            $check->execute([$current_user_id]);
+            $row = $check->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                $ins = $pdo->prepare('INSERT INTO admins (user_id, company_name) VALUES (?, ?)');
+                $ins->execute([$current_user_id, '']);
+                $admin_id = (int)$pdo->lastInsertId();
+                $success = 'Perfil de administrador creado.';
             } else {
-                $success = 'Información actualizada exitosamente';
-            }
-            
-            if (empty($error)) {
-                $pdo->commit();
-            } else {
-                $pdo->rollBack();
+                $admin_id = (int)$row['id'];
+                $success = 'Perfil de administrador ya existía.';
             }
         } catch (Exception $e) {
-            $pdo->rollBack();
-            $error = 'Error al actualizar la información. Por favor intente nuevamente.';
+            $error = 'No se pudo crear el perfil de administrador.';
+        }
+    } elseif (isset($_POST['cleanup_orphan_uploads'])) {
+        // Cleanup orphan files in uploads directory
+        try {
+            $uploadsDir = __DIR__ . '/../uploads';
+            $real = realpath($uploadsDir);
+            if ($real === false || !is_dir($real)) {
+                $success = 'No hay directorio de subidas para limpiar.';
+            } else {
+                $referenced = [];
+                try {
+                    $rs = $pdo->query("SELECT image_url FROM products WHERE image_url LIKE 'uploads/%'");
+                    while ($row = $rs->fetch(PDO::FETCH_ASSOC)) {
+                        if (!empty($row['image_url'])) { $referenced[$row['image_url']] = true; }
+                    }
+                } catch (Exception $ignore) {}
+
+                $all = 0; $deleted = 0; $errors = 0; $referencedCount = count($referenced);
+                foreach (scandir($real) as $f) {
+                    if ($f === '.' || $f === '..' || $f === '.htaccess' || $f === 'index.html') continue;
+                    $full = $real . DIRECTORY_SEPARATOR . $f;
+                    if (!is_file($full)) continue;
+                    $all++;
+                    $rel = 'uploads/' . $f;
+                    if (!isset($referenced[$rel])) {
+                        if (@unlink($full)) { $deleted++; } else { $errors++; }
+                    }
+                }
+                $success = "Limpieza completada: archivos totales $all, referenciados $referencedCount, eliminados $deleted" . ($errors? ", errores $errors" : '');
+            }
+        } catch (Exception $e) {
+            $error = 'Error durante la limpieza: ' . $e->getMessage();
+        }
+    } else {
+        // Update profile and optional password
+        $company_name = trim($_POST['company_name'] ?? '');
+        $first_name = trim($_POST['first_name'] ?? '');
+        $last_name = trim($_POST['last_name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (empty($company_name) || empty($first_name) || empty($last_name) || empty($email)) {
+            $error = 'Por favor complete todos los campos obligatorios';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Por favor ingrese un correo electrónico válido';
+        } else {
+            $pdo->beginTransaction();
+            try {
+                if ($admin['user_id']) {
+                    $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ?");
+                    $stmt->execute([$first_name, $last_name, $email, $admin['user_id']]);
+                }
+                if ($admin_id) {
+                    $stmt = $pdo->prepare("UPDATE admins SET company_name = ? WHERE id = ?");
+                    $stmt->execute([$company_name, $admin_id]);
+                }
+                if (!empty($new_password)) {
+                    if (empty($current_password)) {
+                        $error = 'Por favor ingrese su contraseña actual para cambiarla';
+                    } elseif (strlen($new_password) < 6) {
+                        $error = 'La nueva contraseña debe tener al menos 6 caracteres';
+                    } elseif ($new_password !== $confirm_password) {
+                        $error = 'Las contraseñas nuevas no coinciden';
+                    } else {
+                        $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+                        $stmt->execute([$admin['user_id']]);
+                        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                        if (!$user || !password_verify($current_password, $user['password'])) {
+                            $error = 'La contraseña actual es incorrecta';
+                        } else {
+                            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+                            $stmt->execute([$hashed_password, $admin['user_id']]);
+                            $success = 'Información actualizada exitosamente';
+                        }
+                    }
+                } else {
+                    $success = 'Información actualizada exitosamente';
+                }
+
+                if (empty($error)) { $pdo->commit(); } else { $pdo->rollBack(); }
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $error = 'Error al actualizar la información. Por favor intente nuevamente.';
+            }
         }
     }
-    
-    // Refresh admin info
+
+    // Refresh admin info after any POST action
     $stmt = $pdo->prepare("SELECT a.*, u.first_name, u.last_name, u.email FROM admins a JOIN users u ON a.user_id = u.id WHERE a.id = ?");
     $stmt->execute([$admin_id]);
-    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC) ?: $admin;
+    }
 }
 ?>
 
@@ -265,7 +372,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </ul>
         </div>
         
-        <div class="admin-content">
+    <div class="admin-content">
             <?php if ($error): ?>
                 <div class="alert alert-danger">
                     <?php echo htmlspecialchars($error); ?>
@@ -278,7 +385,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
             
+            <?php if (!$hasAdminProfile): ?>
+                <div class="alert alert-warning">No tienes un perfil de administrador creado aún.</div>
+                <form method="POST">
+                    <input type="hidden" name="create_admin_profile" value="1">
+                    <button type="submit" class="btn btn-primary">Crear perfil de administrador</button>
+                </form>
+                <hr>
+            <?php endif; ?>
+
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token()); ?>">
                 <div class="form-group">
                     <label for="company_name">Nombre de la Empresa</label>
                     <input type="text" id="company_name" name="company_name" value="<?php echo htmlspecialchars($admin['company_name'] ?? ''); ?>" required>
@@ -307,6 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="password-section">
                 <h3>Cambiar Contraseña</h3>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token()); ?>">
                     <div class="form-group">
                         <label for="current_password">Contraseña Actual</label>
                         <input type="password" id="current_password" name="current_password">
@@ -324,6 +442,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <button type="submit" class="btn btn-primary btn-block">
                         <i class="fas fa-key"></i> Cambiar Contraseña
+                    </button>
+                </form>
+            </div>
+
+            <div class="password-section" style="margin-top:20px;">
+                <h3>Mantenimiento</h3>
+                <p>Elimina imágenes en <code>uploads/</code> que no estén asociadas a ningún producto.</p>
+                <form method="POST" onsubmit="return confirm('¿Seguro que deseas limpiar imágenes huérfanas? Esta acción no se puede deshacer.');">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token()); ?>">
+                    <input type="hidden" name="cleanup_orphan_uploads" value="1">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-broom"></i> Limpiar imágenes huérfanas
                     </button>
                 </form>
             </div>

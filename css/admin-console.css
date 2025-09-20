@@ -1,0 +1,15 @@
+:root{
+  --bg:#0b0f14; --card:#0f151c; --ring:#1f2a37; --text:#e5e7eb; --muted:#9ca3af; --primary:#1f6feb; --accent:#22c55e; --danger:#ef4444; --warning:#f59e0b;
+}
+body{ background: var(--bg); }
+.admin-console .card{ background: var(--card); color: var(--text); border:1px solid var(--ring); border-radius:16px; }
+.admin-console .card .card-header{ background: transparent; border-bottom:1px solid var(--ring); }
+.admin-console .form-control, .admin-console .form-select{ background:#0b1219; color:var(--text); border:1px solid var(--ring); }
+.admin-console .form-control::placeholder{ color:#6b7280; }
+.admin-console .btn-primary{ background: var(--primary); border-color: var(--primary); }
+.admin-console .btn-outline-light{ color: var(--text); border-color: var(--ring); }
+.admin-console .table{ color: var(--text); }
+.admin-console .table thead th{ color: var(--muted); }
+.admin-console .alert{ border-radius:12px; }
+.admin-console .badge{ border-radius:999px; }
+.admin-console .section-actions{ display:flex; gap:8px; flex-wrap:wrap; }
