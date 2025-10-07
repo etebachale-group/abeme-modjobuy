@@ -1,21 +1,12 @@
 <?php
-// Database configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'rotteri_nza_kus');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+require_once 'includes/db.php';
 
 try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8", DB_USER, DB_PASS);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
     echo "Database connection successful!\n\n";
-    
     // Check categories
     $stmt = $pdo->prepare("SELECT * FROM categories");
     $stmt->execute();
     $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
     echo "Categories:\n";
     if (count($categories) > 0) {
         foreach ($categories as $category) {

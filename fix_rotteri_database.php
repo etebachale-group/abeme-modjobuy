@@ -1,23 +1,13 @@
 <?php
 // Script to fix the Rotteri Nza Kus database issue
-
-// Database configuration
-$host = 'localhost';
-$user = 'root';
-$pass = '';
-$dbname = 'rotteri_nza_kus';
+require_once 'includes/db.php';
 
 try {
-    // Connect to MySQL server
-    $pdo = new PDO("mysql:host=$host", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Create database if it doesn't exist
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
-    echo "Database '$dbname' created or already exists.\n";
-    
-    // Connect to the specific database
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
+    // Aquí puedes realizar las operaciones necesarias usando $pdo (ya conectado a Supabase/PostgreSQL)
+    // Por ejemplo, verificar si existen tablas, crear tablas, etc.
+    // Ejemplo:
+    $pdo->exec("CREATE TABLE IF NOT EXISTS example_table (id SERIAL PRIMARY KEY, name VARCHAR(100))");
+    echo "Tabla 'example_table' creada o ya existe.\n";
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Create tables with corrected foreign key constraints
