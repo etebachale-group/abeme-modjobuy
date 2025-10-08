@@ -29,25 +29,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add to cart buttons
     const addToCartButtons = document.querySelectorAll('.btn-cart');
     addToCartButtons.forEach(button => {
-        button.addEventListener('click', async function() {
+        button.addEventListener('click', function() {
             const productId = this.getAttribute('data-product-id');
-            await addToCart(productId);
+            addToCart(productId);
         });
     });
     
     // Buy now buttons
     const buyButtons = document.querySelectorAll('.btn-buy');
     buyButtons.forEach(button => {
-        button.addEventListener('click', async function() {
+        button.addEventListener('click', function() {
             const productId = this.getAttribute('data-product-id');
-            // Try server-side add-to-cart then go to checkout
-            const ok = await addToCart(productId, { silent: true });
-            if (ok) {
-                window.location.href = 'checkout.php';
-            } else {
-                // Fallback modal for unauthenticated
-                openPurchaseModal(productId);
-            }
+            openPurchaseModal(productId);
         });
     });
     
@@ -112,40 +105,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Cart functions
-async function addToCart(productId, opts = {}) {
-    const options = Object.assign({ quantity: 1, silent: false }, opts);
-    // If authenticated, use server API for canonical cart
-    if (window.IS_AUTH) {
-        try {
-            const res = await fetch('api/add_to_cart.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ product_id: Number(productId), quantity: Number(options.quantity) || 1 })
-            });
-            const data = await res.json();
-            if (!data.success) throw new Error(data.message || 'No se pudo añadir al carrito');
-            // Update header count from server
-            try { await refreshCartCountFromServer(); } catch(e) { /* ignore */ }
-            if (!options.silent) showNotification('Producto añadido al carrito', 'success');
-            return true;
-        } catch (e) {
-            if (!options.silent) showNotification(e.message, 'error');
-            return false;
-        }
-    }
-    // Guest fallback: localStorage cart
+function addToCart(productId) {
+    // Load cart from localStorage
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const idNum = String(productId);
-    const existingItem = cart.find(item => String(item.id) === idNum);
+    
+    // Check if product already in cart
+    const existingItem = cart.find(item => item.id === productId);
     if (existingItem) {
-        existingItem.quantity += Number(options.quantity) || 1;
+        existingItem.quantity += 1;
     } else {
-        cart.push({ id: idNum, quantity: Number(options.quantity) || 1 });
+        cart.push({
+            id: productId,
+            quantity: 1
+        });
     }
+    
+    // Save cart to localStorage
     localStorage.setItem('cart', JSON.stringify(cart));
+    
+    // Update cart count
     updateCartCount();
-    if (!options.silent) showNotification('Producto añadido al carrito', 'success');
-    return true;
+    
+    // Show notification
+    showNotification('Producto añadido al carrito', 'success');
 }
 
 function updateCartCount() {
@@ -155,16 +137,6 @@ function updateCartCount() {
     const cartCount = document.querySelector('.cart-count');
     if (cartCount) {
         cartCount.textContent = totalItems;
-    }
-}
-
-async function refreshCartCountFromServer(){
-    const res = await fetch('api/get_cart_count.php');
-    const data = await res.json();
-    if (data && data.success && typeof data.count !== 'undefined'){
-        const cartCount = document.querySelector('.cart-count');
-        if (cartCount) cartCount.textContent = data.count;
-        if (window.updateCartCount) window.updateCartCount(data.count);
     }
 }
 

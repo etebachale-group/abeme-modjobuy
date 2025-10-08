@@ -2,6 +2,7 @@
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
 requireAdmin();
+@session_write_close(); // release lock for long-running SSE
 
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');

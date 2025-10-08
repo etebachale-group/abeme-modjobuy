@@ -60,6 +60,7 @@ try {
     <title>Gestión de Pedidos - Rotteri Nza Kus</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/modern.css">
     <link rel="stylesheet" href="../css/toast.css">
     <style>
         .admin-container {
@@ -81,42 +82,15 @@ try {
             font-size: 2rem;
         }
         
-        .admin-nav {
-            background: #34495e;
-            padding: 10px 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .admin-nav ul {
-            list-style: none;
-            display: flex;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .admin-nav li {
-            margin-right: 20px;
-        }
-        
-        .admin-nav a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
-        
-        .admin-nav a:hover,
-        .admin-nav a.active {
-            background: #3498db;
-        }
+        /* Admin nav menu styles intentionally removed to use default browser styles */
         
         .admin-content {
-            background: white;
+            background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85));
+            color: #e5e7eb;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            border: 1px solid rgba(255,255,255,.06);
         }
         
         .table-responsive { width: 100%; overflow-x: auto; }
@@ -125,28 +99,30 @@ try {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            color: #e5e7eb;
         }
         
         .orders-table th,
         .orders-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid rgba(255,255,255,.12);
         }
         
         .orders-table th {
-            background: #f2f2f2;
+            background: rgba(255,255,255,.06);
             font-weight: bold;
+            color: #e5e7eb;
         }
         
         .orders-table tr:hover {
-            background: #f9f9f9;
+            background: rgba(255,255,255,.04);
         }
 
         /* Highlight for new items */
-    .orders-table tr.new-item { animation: flashIn 2.4s ease-out; background: #f0fff4; }
+    .orders-table tr.new-item { animation: flashIn 2.4s ease-out; background: rgba(16,185,129,.28); }
         .badge-new { background:#10b981; color:#fff; border-radius:999px; padding:2px 8px; font-size:.75rem; margin-left:6px; }
-    @keyframes flashIn { 0%{background:#bbf7d0} 60%{background:#e7fee9} 100%{background:#fff} }
+    @keyframes flashIn { 0%{background:rgba(16,185,129,.35)} 60%{background:rgba(16,185,129,.18)} 100%{background:transparent} }
         
         .order-status {
             padding: 5px 10px;
@@ -155,35 +131,17 @@ try {
             font-weight: 500;
         }
         
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
+        .status-pending { background: rgba(250,204,21,.18); color: #fde68a; border: 1px solid rgba(250,204,21,.25); }
         
-        .status-confirmed {
-            background: #cce5ff;
-            color: #004085;
-        }
+        .status-confirmed { background: rgba(59,130,246,.18); color: #93c5fd; border: 1px solid rgba(59,130,246,.25); }
         
-        .status-processing {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
+        .status-processing { background: rgba(6,182,212,.18); color: #67e8f9; border: 1px solid rgba(6,182,212,.25); }
         
-        .status-shipped {
-            background: #bee5eb;
-            color: #0c5460;
-        }
+        .status-shipped { background: rgba(14,165,233,.18); color: #7dd3fc; border: 1px solid rgba(14,165,233,.25); }
         
-        .status-delivered {
-            background: #d4edda;
-            color: #155724;
-        }
+        .status-delivered { background: rgba(34,197,94,.18); color: #86efac; border: 1px solid rgba(34,197,94,.25); }
         
-        .status-cancelled {
-            background: #f8d7da;
-            color: #721c24;
-        }
+        .status-cancelled { background: rgba(244,63,94,.18); color: #fda4af; border: 1px solid rgba(244,63,94,.25); }
         
         .btn {
             padding: 10px 14px;
@@ -225,18 +183,20 @@ try {
         
         .no-orders {
             text-align: center;
-            padding: 40px;
-            color: #666;
+            padding: 32px;
+            color: #e5e7eb;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 10px;
         }
 
         /* Modal styling */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 1000; }
-        .modal .modal-content { background: #fff; width: 100%; max-width: 900px; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-height: 90vh; overflow: auto; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 1000; }
+    .modal .modal-content { background: linear-gradient(180deg, rgba(28,37,65,.98), rgba(28,37,65,.92)); color:#e5e7eb; width: 100%; max-width: 900px; border-radius: 12px; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.45); max-height: 90vh; overflow: auto; border:1px solid rgba(255,255,255,.08); }
         .modal .close { float: right; font-size: 24px; cursor: pointer; }
         .modal h3 { margin-top: 0; }
 
-        /* Sticky admin nav */
-        .admin-nav { position: sticky; top: 0; z-index: 20; }
+    /* Sticky admin nav removed */
 
         /* Responsive table -> cards */
         @media (max-width: 900px) {
@@ -244,69 +204,25 @@ try {
             .orders-table { border-collapse: separate; border-spacing: 0; }
             .orders-table thead { display: none; }
             .orders-table, .orders-table tbody, .orders-table tr, .orders-table td { display: block; width: 100%; }
-            .orders-table tr { background: #fff; margin-bottom: 12px; border: 1px solid #eee; border-radius: 10px; padding: 8px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-            .orders-table td { border: 0; border-bottom: 1px dashed #eee; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; }
+            .orders-table tr { background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85)); margin-bottom: 12px; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 8px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+            .orders-table td { border: 0; border-bottom: 1px dashed rgba(255,255,255,.18); padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; color:#e5e7eb; }
             .orders-table td:last-child { border-bottom: 0; }
-            .orders-table td::before { content: attr(data-label); font-weight: 600; color: #6b7280; margin-right: 10px; text-align: left; }
+            .orders-table td::before { content: attr(data-label); font-weight: 600; color: #cbd5e1; margin-right: 10px; text-align: left; }
             .btn { width: 100%; margin: 6px 0; }
         }
     </style>
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <img src="../img/logo-without-bg.png" alt="Rotteri Nza Kus Logo">
-                    <h1>Rotteri Nza Kus</h1>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-menu">
-                        <li><a href="../index.php">Inicio</a></li>
-                        <li><a href="../index.php#products">Productos</a></li>
-                        <li><a href="../index.php#contact">Contacto</a></li>
-                        <?php if (isAuthenticated()): ?>
-                            <?php if (isAdmin()): ?>
-                                <li><a href="index.php">Panel Admin</a></li>
-                                <li><a href="../profile.php">Mi Perfil</a></li>
-                            <?php else: ?>
-                                <li><a href="../profile.php">Mi Perfil</a></li>
-                            <?php endif; ?>
-                            <li><a href="../logout.php">Cerrar Sesión</a></li>
-                        <?php else: ?>
-                            <li><a href="../login.php">Iniciar Sesión</a></li>
-                            <li><a href="../register.php">Registrarse</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-                <div class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </div>
-                <?php if (isAuthenticated()) { include __DIR__ . '/../includes/notifications_ui.php'; } ?>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php include __DIR__ . '/../includes/layout_header.php'; ?>
 
     <div class="admin-container">
         <div class="admin-header">
             <h1>Gestión de Pedidos</h1>
-            <p>Bienvenido, <?php echo htmlspecialchars(currentUserName()); ?></p>
+            <p>Bienvenido, <?php echo htmlspecialchars(trim(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')) ?: ($_SESSION['user_email'] ?? 'Admin')); ?></p>
         </div>
         
-        <div class="admin-nav">
-            <ul>
-                <li><a href="index.php">Productos</a></li>
-                <li><a href="categories.php">Categorías</a></li>
-                <li><a href="orders.php" class="active">Pedidos</a></li>
-                <li><a href="banners.php">Banners</a></li>
-                <li><a href="settings.php">Configuración</a></li>
-            </ul>
-        </div>
+        <?php include __DIR__ . '/../includes/admin_navbar.php'; ?>
         
         <div class="admin-content">
             <h2>Pedidos Recibidos</h2>
@@ -525,6 +441,6 @@ try {
         });
     </script>
     <script src="../js/toast.js"></script>
-    <?php include __DIR__ . '/../includes/cart_ui.php'; ?>
+            <?php include __DIR__ . '/../includes/cart_ui.php'; ?>
 </body>
 </html>

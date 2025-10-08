@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $price = $_POST['price'] ?? 0;
     $weight = $_POST['weight'] ?? 0;
     $tags = trim($_POST['tags'] ?? '');
+    $stock = $_POST['stock'] ?? null;
     $source_url = trim($_POST['source_url'] ?? '');
     $image_url = $_POST['image_url'] ?? '';
     
@@ -80,11 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Ensure source_url exists for legacy schemas
         try { $pdo->exec("ALTER TABLE products ADD COLUMN source_url VARCHAR(500) NULL"); } catch (Exception $ignore) {}
+        // Ensure stock column exists (nullable means no stock control)
+        try { $pdo->exec("ALTER TABLE products ADD COLUMN stock INT NULL"); } catch (Exception $ignore) {}
+        // Normalize stock: empty string -> NULL
+        $stockVal = (isset($stock) && $stock !== '' && $stock !== null) ? max(0, (int)$stock) : null;
         $stmt = $pdo->prepare(
-            "INSERT INTO products (name, description, price, weight, image_url, category_id, admin_id, tags, source_url) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO products (name, description, price, weight, image_url, category_id, admin_id, tags, source_url, stock) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
-        $stmt->execute([$name, $description, $price, $weight, $image_url, $category_id, $admin_id, $tags, $source_url]);
+        $stmt->execute([$name, $description, $price, $weight, $image_url, $category_id, $admin_id, $tags, $source_url, $stockVal]);
         
     $newId = $pdo->lastInsertId();
     echo json_encode(['success' => true, 'message' => 'Producto agregado exitosamente.', 'id' => $newId, 'image_url' => $image_url]);

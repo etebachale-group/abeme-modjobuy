@@ -180,4 +180,27 @@ try {
 } catch (Exception $e) {
     // Silent: avoid blocking app if permissions limited
 }
+
+// Auto-healing: ensure ad_banners table exists for homepage carousel
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ad_banners (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        image_path VARCHAR(255) NOT NULL,
+        title VARCHAR(255) NULL,
+        link_url VARCHAR(500) NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        sort_order INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // Add missing columns defensively
+    $alters = [
+        "ALTER TABLE ad_banners ADD COLUMN title VARCHAR(255) NULL",
+        "ALTER TABLE ad_banners ADD COLUMN link_url VARCHAR(500) NULL",
+        "ALTER TABLE ad_banners ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1",
+        "ALTER TABLE ad_banners ADD COLUMN sort_order INT NOT NULL DEFAULT 0"
+    ];
+    foreach ($alters as $sql) { try { $pdo->exec($sql); } catch (Exception $ignore) {} }
+} catch (Exception $e) {
+    // ignore if DB user lacks permissions; carousel will simply be hidden
+}
 ?>

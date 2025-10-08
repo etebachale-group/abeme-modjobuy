@@ -21,6 +21,32 @@
     <link rel="stylesheet" href="css/payment-details.css">
     <link rel="stylesheet" href="css/archived-shipments.css">
     <link rel="stylesheet" href="css/panel-ui.css">
+    <link rel="stylesheet" href="css/header-responsive.css">
+    <link rel="stylesheet" href="css/carousel.css">
+    <style>
+        /* Minimal functional styles for collapsible nav (no design) */
+        .header .menu-toggle { display: none !important; }
+        .header .nav-container .nav-menu { display: block !important; margin: 0; padding: 0; list-style: none; }
+        @media (min-width: 769px) {
+            .header .nav-container .nav-menu { display: flex !important; align-items: center; gap: .5rem; }
+            .header .nav-container .nav-menu > li { display: inline-block; }
+        }
+        @media (max-width: 768px) {
+            .header .menu-toggle { display: block !important; }
+            .header .nav-container { position: relative; }
+            .header .nav-container .nav-menu { display: none !important; }
+            /* Open state: dropdown overlays content below without changing header size */
+            .header .nav-container.open .nav-menu {
+                display: block !important;
+                position: absolute;
+                top: calc(100% + 6px);
+                right: 8px;
+                left: 8px;
+                z-index: 3000;
+                background-color: inherit; /* visual style comes from external css */
+            }
+        }
+    </style>
     <?php if (basename($_SERVER['PHP_SELF']) === 'register_partner.php'): ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="css/admin-console.css">
@@ -32,6 +58,7 @@
     <script src="js/tracking.js" defer></script>
     <script src="js/payment-calculator.js" defer></script>
     <script src="js/notify-arrival.js" defer></script>
+    <script src="js/carousel.js" defer></script>
 </head>
 <body>
     <!-- Encabezado -->
@@ -40,9 +67,10 @@
             <a href="index.php" class="logo">
                 <img src="img/logo.png" alt="AME Logo" class="logo-img">
             </a>
-            <button class="menu-toggle" id="menuToggle">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-controls="navMenu" aria-expanded="false" role="button" tabindex="0">
                 <i class="fas fa-bars"></i>
             </button>
+            
             <?php
                 $currentPage = basename($_SERVER['PHP_SELF'] ?? '');
                 $active = function($pages) use ($currentPage) {
@@ -96,9 +124,9 @@
                         <div id="notificationList" class="notification-list"></div>
                     </div>
                 </li>
-                <li><a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i> Salir</a></li>
+                <li><a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Salir</span></a></li>
                 <?php else: ?>
-                <li><a href="login.php" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                <li><a href="login.php" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Login</span></a></li>
                 <?php endif; ?>
             </ul>
         </nav>

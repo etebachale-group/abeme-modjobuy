@@ -82,17 +82,19 @@ try {
         }
         
         .order-summary {
-            background: white;
+            background: var(--grad-surface,linear-gradient(180deg,rgba(28,37,65,0.92),rgba(22,32,59,0.92)));
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 14px;
+            border:1px solid var(--border,rgba(148,163,184,0.22));
+            box-shadow: 0 4px 20px rgba(0,0,0,0.30);
         }
         
         .shipping-info {
-            background: white;
+            background: var(--grad-surface,linear-gradient(180deg,rgba(28,37,65,0.92),rgba(22,32,59,0.92)));
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 14px;
+            border:1px solid var(--border,rgba(148,163,184,0.22));
+            box-shadow: 0 4px 20px rgba(0,0,0,0.30);
         }
         
         .form-group {
@@ -161,43 +163,7 @@ try {
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <img src="img/logo-without-bg.png" alt="Rotteri Nza Kus Logo">
-                    <h1>Rotteri Nza Kus</h1>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-menu">
-                        <li><a href="index.php">Inicio</a></li>
-                        <li><a href="index.php#products">Productos</a></li>
-                        <li><a href="index.php#contact">Contacto</a></li>
-                        <?php if (isAuthenticated()): ?>
-                            <?php if (isAdmin()): ?>
-                                <li><a href="admin/index.php">Panel Admin</a></li>
-                            <?php else: ?>
-                                <li><a href="profile.php">Mi Perfil</a></li>
-                            <?php endif; ?>
-                            <li><a href="logout.php">Cerrar Sesión</a></li>
-                        <?php else: ?>
-                            <li><a href="login.php">Iniciar Sesión</a></li>
-                            <li><a href="register.php">Registrarse</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-                <div class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </div>
-                <?php if (isAuthenticated()) { include __DIR__ . '/includes/notifications_ui.php'; } ?>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php include __DIR__ . '/includes/layout_header.php'; ?>
 
     <div class="checkout-container">
         <div class="checkout-header">
@@ -311,7 +277,16 @@ try {
                     // Do not reload here; we want to proceed to create the order
                     await syncLocalCart(false);
                 }
-                const res = await fetch('api/create_order.php', { method:'POST' });
+                const payload = {
+                    full_name: document.getElementById('fullName')?.value || '',
+                    email: document.getElementById('email')?.value || '',
+                    phone: document.getElementById('phone')?.value || '',
+                    address: document.getElementById('address')?.value || '',
+                    city: document.getElementById('city')?.value || '',
+                    country: document.getElementById('country')?.value || '',
+                    payment_method: document.getElementById('paymentMethod')?.value || ''
+                };
+                const res = await fetch('api/create_order.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
                 const j = await res.json();
                 if(!j.success){ throw new Error(j.message||'No se pudo crear el pedido'); }
                 window.location.href = 'order-confirmation.php?order=' + encodeURIComponent(j.order_number);

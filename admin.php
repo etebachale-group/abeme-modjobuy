@@ -12,6 +12,89 @@ requireAdmin();
 $success = '';
 $error = '';
 
+// ------ Publicidad (Carrusel) Handlers ------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ad_action'])) {
+    $action = $_POST['ad_action'];
+    if ($action === 'create') {
+        // Handle image upload
+        $uploadOk = true;
+        $targetDir = 'pub/ads/';
+        if (!is_dir($targetDir)) { @mkdir($targetDir, 0777, true); }
+        $imagePath = '';
+        if (!empty($_FILES['ad_image']['name'])) {
+            $basename = basename($_FILES['ad_image']['name']);
+            $ext = strtolower(pathinfo($basename, PATHINFO_EXTENSION));
+            $allowed = ['jpg','jpeg','png','gif','webp'];
+            if (!in_array($ext, $allowed, true)) { $uploadOk = false; $error = 'Formato de imagen no permitido.'; }
+            if ($uploadOk) {
+                $newName = 'ad_' . time() . '_' . mt_rand(1000,9999) . '.' . $ext;
+                $target = $targetDir . $newName;
+                if (move_uploaded_file($_FILES['ad_image']['tmp_name'], $target)) {
+                    $imagePath = $target;
+                } else {
+                    $uploadOk = false; $error = 'No se pudo subir la imagen.';
+                }
+            }
+        } else {
+            $uploadOk = false; $error = 'Debe subir una imagen.';
+        }
+        if ($uploadOk) {
+            $title = trim($_POST['ad_title'] ?? '');
+            $link = trim($_POST['ad_link'] ?? '');
+            $sort = (int)($_POST['ad_sort'] ?? 0);
+            $id = createAd($pdo, [ 'image_path' => $imagePath, 'title' => $title, 'link_url' => $link, 'sort_order' => $sort, 'is_active' => !empty($_POST['ad_active']) ]);
+            if ($id) { $success = 'Publicidad creada.'; } else { $error = 'No se pudo crear la publicidad.'; }
+        }
+    } elseif ($action === 'toggle') {
+        $id = (int)($_POST['id'] ?? 0); $active = isset($_POST['is_active']) && (int)$_POST['is_active'] === 1;
+        if ($id > 0 && toggleAdActive($pdo, $id, $active)) { $success = 'Estado actualizado.'; } else { $error = 'No se pudo actualizar.'; }
+    } elseif ($action === 'delete') {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0 && deleteAd($pdo, $id)) { $success = 'Publicidad eliminada.'; } else { $error = 'No se pudo eliminar.'; }
+    } elseif ($action === 'reorder') {
+        $id = (int)($_POST['id'] ?? 0); $sort = (int)($_POST['sort_order'] ?? 0);
+        if ($id > 0 && reorderAd($pdo, $id, $sort)) { $success = 'Orden actualizado.'; } else { $error = 'No se pudo actualizar el orden.'; }
+    } elseif ($action === 'update') {
+        $id = (int)($_POST['id'] ?? 0);
+        $payload = [
+            'title' => $_POST['ad_title'] ?? null,
+            'link_url' => $_POST['ad_link'] ?? null,
+            'sort_order' => isset($_POST['ad_sort']) ? (int)$_POST['ad_sort'] : null,
+            'is_active' => isset($_POST['ad_active']) ? 1 : 0,
+        ];
+        if ($id > 0 && updateAd($pdo, $id, $payload)) { $success = 'Publicidad actualizada.'; } else { $error = 'No se pudo actualizar la publicidad.'; }
+    } elseif ($action === 'change_image') {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0 && !empty($_FILES['new_image']['name'])) {
+            // Obtener anuncio para conocer imagen anterior
+            $ad = function_exists('getAdById') ? getAdById($pdo, $id) : null;
+            $targetDir = 'pub/ads/'; if (!is_dir($targetDir)) { @mkdir($targetDir, 0777, true); }
+            $basename = basename($_FILES['new_image']['name']);
+            $ext = strtolower(pathinfo($basename, PATHINFO_EXTENSION));
+            $allowed = ['jpg','jpeg','png','gif','webp'];
+            if (!in_array($ext, $allowed, true)) { $error = 'Formato de imagen no permitido.'; }
+            else {
+                $newName = 'ad_' . time() . '_' . mt_rand(1000,9999) . '.' . $ext;
+                $target = $targetDir . $newName;
+                if (move_uploaded_file($_FILES['new_image']['tmp_name'], $target)) {
+                    if (updateAdImage($pdo, $id, $target)) {
+                        $success = 'Imagen actualizada.';
+                        // Borrar archivo antiguo si existe y está dentro de pub/ads
+                        $old = $ad['image_path'] ?? '';
+                        if ($old && strpos($old, 'pub/ads/') === 0 && file_exists($old)) { @unlink($old); }
+                    } else {
+                        $error = 'No se pudo actualizar la imagen en la base de datos.';
+                    }
+                } else {
+                    $error = 'No se pudo subir la imagen.';
+                }
+            }
+        } else {
+            $error = 'Debe seleccionar una nueva imagen.';
+        }
+    }
+}
+
 // Procesar formulario de nuevo envío
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_shipment'])) {
@@ -461,6 +544,81 @@ $status_options = [
     </section>
 
     <!-- Gestión de administradores movida a Registrar Socio -->
+
+    <section class="admin-section">
+        <h2 class="section-title">Publicidad (Carrusel)</h2>
+        <form method="post" enctype="multipart/form-data" class="section">
+            <input type="hidden" name="ad_action" value="create">
+            <div class="form-group"><label class="form-label">Imagen *</label><input type="file" name="ad_image" accept=".jpg,.jpeg,.png,.gif,.webp" class="form-input" required></div>
+            <div class="form-group"><label class="form-label">Título</label><input type="text" name="ad_title" class="form-input" placeholder="Texto opcional"></div>
+            <div class="form-group"><label class="form-label">Enlace</label><input type="url" name="ad_link" class="form-input" placeholder="https://..."></div>
+            <div class="form-group"><label class="form-label">Orden</label><input type="number" name="ad_sort" class="form-input" value="0"></div>
+            <div class="form-group"><label><input type="checkbox" name="ad_active" value="1" checked> Activo</label></div>
+            <button type="submit" class="btn">Añadir</button>
+        </form>
+
+        <?php $adsAll = function_exists('getAllAds') ? getAllAds($pdo) : []; ?>
+        <?php if (!empty($adsAll)): ?>
+        <div style="overflow-x:auto;">
+        <table class="admin-table">
+            <thead><tr><th>ID</th><th>Imagen</th><th>Título</th><th>Enlace</th><th>Activo</th><th>Orden</th><th>Acciones</th></tr></thead>
+            <tbody>
+            <?php foreach ($adsAll as $ad): ?>
+                <tr>
+                    <td><?php echo (int)$ad['id']; ?></td>
+                    <td><?php if (!empty($ad['image_path'])): ?><img src="<?php echo htmlspecialchars($ad['image_path']); ?>" alt="" style="height:50px;object-fit:cover;"><?php endif; ?></td>
+                    <td><?php echo htmlspecialchars($ad['title'] ?? ''); ?></td>
+                    <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><a href="<?php echo htmlspecialchars($ad['link_url'] ?? ''); ?>" target="_blank"><?php echo htmlspecialchars($ad['link_url'] ?? ''); ?></a></td>
+                    <td>
+                        <form method="post" style="display:inline-block">
+                            <input type="hidden" name="ad_action" value="toggle">
+                            <input type="hidden" name="id" value="<?php echo (int)$ad['id']; ?>">
+                            <input type="hidden" name="is_active" value="<?php echo $ad['is_active'] ? 0 : 1; ?>">
+                            <button type="submit" class="btn" style="min-width:100px;"><?php echo $ad['is_active'] ? 'Desactivar' : 'Activar'; ?></button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" style="display:flex;gap:.5rem;align-items:center;">
+                            <input type="hidden" name="ad_action" value="reorder">
+                            <input type="hidden" name="id" value="<?php echo (int)$ad['id']; ?>">
+                            <input type="number" name="sort_order" value="<?php echo (int)$ad['sort_order']; ?>" style="width:80px;" class="form-input">
+                            <button type="submit" class="btn">Guardar</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" onsubmit="return confirm('¿Eliminar publicidad?');" style="display:inline-block">
+                            <input type="hidden" name="ad_action" value="delete">
+                            <input type="hidden" name="id" value="<?php echo (int)$ad['id']; ?>">
+                            <button type="submit" class="btn" style="background:#c62828;">Eliminar</button>
+                        </form>
+                        <details style="margin-top:.5rem;">
+                            <summary>Editar</summary>
+                            <form method="post" class="section" style="padding:.5rem 0 0;">
+                                <input type="hidden" name="ad_action" value="update">
+                                <input type="hidden" name="id" value="<?php echo (int)$ad['id']; ?>">
+                                <div class="form-group"><label class="form-label">Título</label><input type="text" name="ad_title" class="form-input" value="<?php echo htmlspecialchars($ad['title'] ?? ''); ?>"></div>
+                                <div class="form-group"><label class="form-label">Enlace</label><input type="url" name="ad_link" class="form-input" value="<?php echo htmlspecialchars($ad['link_url'] ?? ''); ?>" placeholder="https://..."></div>
+                                <div class="form-group"><label class="form-label">Orden</label><input type="number" name="ad_sort" class="form-input" value="<?php echo (int)$ad['sort_order']; ?>"></div>
+                                <div class="form-group"><label><input type="checkbox" name="ad_active" value="1" <?php echo $ad['is_active'] ? 'checked' : ''; ?>> Activo</label></div>
+                                <button type="submit" class="btn">Guardar cambios</button>
+                            </form>
+                            <form method="post" enctype="multipart/form-data" class="section" style="padding:.5rem 0 0;">
+                                <input type="hidden" name="ad_action" value="change_image">
+                                <input type="hidden" name="id" value="<?php echo (int)$ad['id']; ?>">
+                                <div class="form-group"><label class="form-label">Nueva imagen</label><input type="file" name="new_image" accept=".jpg,.jpeg,.png,.gif,.webp" class="form-input" required></div>
+                                <button type="submit" class="btn">Cambiar imagen</button>
+                            </form>
+                        </details>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        <?php else: ?>
+        <p>No hay anuncios aún.</p>
+        <?php endif; ?>
+    </section>
 
 
 <?php include 'includes/footer.php'; ?>

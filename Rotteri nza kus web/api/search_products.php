@@ -9,6 +9,8 @@ $category = isset($_GET['category']) ? (int)$_GET['category'] : null;
 try {
     // Ensure products has tags column for older installs
     try { $pdo->exec("ALTER TABLE products ADD COLUMN tags VARCHAR(500) NULL"); } catch (Exception $ignore) {}
+    // Ensure products has stock column (nullable = unmanaged)
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN stock INT NULL"); } catch (Exception $ignore) {}
 } catch (Exception $ignore) {}
 
 $sql = "SELECT p.* FROM products p WHERE 1=1";

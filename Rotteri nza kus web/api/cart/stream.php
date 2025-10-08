@@ -15,6 +15,8 @@ header('Connection: keep-alive');
 set_time_limit(0);
 
 $userId = currentUserId();
+$__sse_user_id = $userId; // keep local copy, then free session lock
+@session_write_close();
 $lastCount = -1;
 $maxSeconds = 300; // 5 minutes keep-alive
 $start = time();

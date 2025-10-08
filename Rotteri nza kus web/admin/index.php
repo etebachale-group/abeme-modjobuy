@@ -30,6 +30,9 @@ try {
     try { $pdo->exec("ALTER TABLE products ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"); } catch (Exception $ignore) {}
     try { $pdo->exec("ALTER TABLE products ADD COLUMN tags VARCHAR(500) NULL"); } catch (Exception $ignore) {}
     try { $pdo->exec("ALTER TABLE products ADD COLUMN source_url VARCHAR(500) NULL"); } catch (Exception $ignore) {}
+    // Ensure is_active and stock exist for consistent behavior across the app
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1"); } catch (Exception $ignore) {}
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN stock INT NULL"); } catch (Exception $ignore) {}
 } catch (Exception $e) {
     // Silent; page will show empty lists if fails
 }
@@ -55,338 +58,150 @@ try {
     } catch (Exception $ignore) {}
 }
 
-// Get categories for form
-$stmt = $pdo->prepare("SELECT * FROM categories ORDER BY name");
-$stmt->execute();
-$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Get categories for form (robust against missing/damaged table)
+$categories = [];
+$categories_notice = null;
+try {
+    $stmt = $pdo->prepare("SELECT * FROM categories ORDER BY name");
+    $stmt->execute();
+    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // If the table is missing or inconsistent (e.g., InnoDB 1932), try to recreate it gracefully
+    $categories_notice = 'Advertencia: la tabla de categorías no estaba disponible. Intentando repararla automáticamente…';
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS categories (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(150) NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $ignore) {}
+
+    // Re-try the query; if it still fails, perform a DROP + CREATE as a last resort
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM categories ORDER BY name");
+        $stmt->execute();
+        $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $categories_notice = $categories_notice . ' (Reparada)';
+    } catch (Exception $e2) {
+        try {
+            // Temporarily disable FK checks to allow dropping the referenced table if needed
+            $pdo->exec("SET FOREIGN_KEY_CHECKS=0");
+            $pdo->exec("DROP TABLE IF EXISTS categories");
+            $pdo->exec("CREATE TABLE categories (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(150) NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $pdo->exec("SET FOREIGN_KEY_CHECKS=1");
+            // Still show an empty list but without breaking the page
+            $categories = [];
+            $categories_notice = $categories_notice . ' (Recreada)';
+        } catch (Exception $e3) {
+            try { $pdo->exec("SET FOREIGN_KEY_CHECKS=1"); } catch (Exception $ignore4) {}
+            $categories_notice = 'Error crítico: no se pudo recrear la tabla de categorías. ' . htmlspecialchars($e3->getMessage());
+        }
+    }
+}
 ?>
 
 <!DOCTYPE html>
-                <li><a href="index.php" class="active">Productos</a></li>
-                <li><a href="categories.php">Categorías</a></li>
-                <li><a href="orders.php">Pedidos</a></li>
-                <li><a href="banners.php">Banners</a></li>
-                <li><a href="settings.php">Configuración</a></li>
+<html lang="es">
+<head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - Rotteri Nza Kus</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/modern.css">
     <link rel="stylesheet" href="../css/toast.css">
     <style>
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .admin-header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .admin-header h1 {
-            margin: 0;
-            font-size: 2rem;
-        }
-        
-        .admin-nav {
-            background: #34495e;
-            padding: 10px 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .admin-nav ul {
-            list-style: none;
-            display: flex;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .admin-nav li {
-            margin-right: 20px;
-        }
-        
-        .admin-nav a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
-        
-        .admin-nav a:hover,
-        .admin-nav a.active {
-            background: #3498db;
-        }
-        
-        .admin-content {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-        }
-        
-        .product-card {
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
-        
-        .product-image {
-            height: 200px;
-            overflow: hidden;
-        }
-        
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .product-info {
-            padding: 15px;
-        }
-        
-        .product-name {
-            font-size: 1.2rem;
-            margin: 0 0 10px 0;
-            color: #2c3e50;
-        }
-        
-        .product-price {
-            font-weight: bold;
-            color: #27ae60;
-            font-size: 1.1rem;
-            margin: 5px 0;
-        }
-        
-        .product-weight {
-            background: #f1f2f6;
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: inline-block;
-            margin: 5px 0;
-        }
-        
-        .product-actions {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-        
-        .btn-edit {
-            background: #3498db;
-            color: white;
-            flex: 1;
-            text-align: center;
-        }
-        
-        .btn-edit:hover {
-            background: #2980b9;
-        }
-        
-        .btn-delete {
-            background: #e74c3c;
-            color: white;
-            flex: 1;
-            text-align: center;
-        }
-        
-        .btn-delete:hover {
-            background: #c0392b;
-        }
-        
-        .btn-add {
-            background: #27ae60;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            display: inline-block;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-        
-        .btn-add:hover {
-            background: #219653;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 20px;
-            border: none;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 600px;
-            position: relative;
-            /* Make modal window scrollable on its own */
-            max-height: 85vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            position: absolute;
-            right: 20px;
-            top: 15px;
-            cursor: pointer;
-        }
-        
-        .close:hover,
-        .close:focus {
-            color: black;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .btn-primary {
-            background: #9b59b6;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        
-        .btn-primary:hover {
-            background: #8e44ad;
-        }
-        
-        .btn-block {
-            display: block;
-            width: 100%;
-        }
+        /* Admin layout */
+        .admin-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .admin-header { background: #2c3e50; color: #fff; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .admin-header h1 { margin: 0; font-size: 2rem; }
 
-    /* Tags */
-    .tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .tag-chip { background:#f1f2f6; color:#34495e; padding:4px 8px; border-radius:12px; font-size:.8rem; }
+        /* Grid */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; padding: 20px 0; }
+
+        /* Product card (dark, compact, modern) */
+        .product-card {
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85));
+            color: #e5e7eb;
+            display: flex; flex-direction: column;
+            transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+        }
+        .product-card:hover { transform: translateY(-6px); box-shadow: 0 18px 36px rgba(0,0,0,.35); border-color: rgba(255,255,255,.15); }
+
+        .product-image { aspect-ratio: 3 / 2; overflow: hidden; }
+        .product-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .product-info { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .product-name { font-size: 1rem; margin: 0; color: #e5e7eb; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .product-price { font-weight: 700; color: #27ae60; font-size: 1.1rem; margin: 5px 0; }
+        .product-weight { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); color: #e5e7eb; padding: 3px 8px; border-radius: 20px; font-size: .8rem; display: inline-block; margin: 5px 0; }
+        .product-actions { margin-top: auto; display: flex; gap: 10px; }
+
+        /* Buttons */
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: background .3s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-edit { background: #3498db; color: #fff; flex: 1; text-align: center; }
+        .btn-edit:hover { background: #2980b9; }
+        .btn-delete { background: #e74c3c; color: #fff; flex: 1; text-align: center; }
+        .btn-delete:hover { background: #c0392b; }
+        .btn-add { background: #27ae60; color: #fff; padding: 12px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: 600; }
+        .btn-add:hover { background: #219653; }
+
+        /* Modal (dark) */
+        .modal { display: none; position: fixed; z-index: 1000; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,.5); }
+        .modal-content { background: linear-gradient(180deg, rgba(28,37,65,.98), rgba(28,37,65,.92)); color:#e5e7eb; margin: 5% auto; padding: 20px; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; width: 80%; max-width: 600px; position: relative; max-height: 85vh; overflow-y: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
+        .close { color: #cbd5e1; float: right; font-size: 28px; font-weight: bold; position: absolute; right: 20px; top: 15px; cursor: pointer; }
+        .close:hover, .close:focus { color: #fff; }
+
+        /* Form (dark) */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; font-size: 1rem; background: rgba(255,255,255,.06); color: #e5e7eb; }
+        .form-group input::placeholder, .form-group textarea::placeholder { color: #9aa4b2; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59,130,246,.25); }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .btn-primary { background: #9b59b6; color: #fff; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1rem; }
+        .btn-primary:hover { background: #8e44ad; }
+        .btn-block { display: block; width: 100%; }
+
+        /* Tags + empty state */
+        .tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag-chip { background: rgba(255,255,255,.08); color:#cbd5e1; padding:4px 8px; border-radius:12px; font-size:.8rem; border:1px solid rgba(255,255,255,.12); }
+        .no-products { text-align:center; padding: 28px; color:#e5e7eb; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:10px; grid-column: 1/-1; }
 
         @media (max-width: 640px) {
-            .modal-content {
-                width: 92%;
-                margin: 4vh auto;
-                max-height: 90vh;
-            }
+            .modal-content { width: 92%; margin: 4vh auto; max-height: 90vh; }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <img src="../img/logo-without-bg.png" alt="Rotteri Nza Kus Logo">
-                    <h1>Rotteri Nza Kus</h1>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-menu">
-                        <li><a href="../index.php">Inicio</a></li>
-                        <li><a href="../index.php#products">Productos</a></li>
-                        <li><a href="../index.php#contact">Contacto</a></li>
-                        <?php if (isAuthenticated()): ?>
-                            <?php if (isAdmin()): ?>
-                                <li><a href="index.php" class="active">Panel Admin</a></li>
-                                <li><a href="../profile.php">Mi Perfil</a></li>
-                            <?php else: ?>
-                                <li><a href="../profile.php">Mi Perfil</a></li>
-                            <?php endif; ?>
-                            <li><a href="../logout.php">Cerrar Sesión</a></li>
-                        <?php else: ?>
-                            <li><a href="../login.php">Iniciar Sesión</a></li>
-                            <li><a href="../register.php">Registrarse</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-                <div class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </div>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php include __DIR__ . '/../includes/layout_header.php'; ?>
 
     <div class="admin-container">
         <div class="admin-header">
             <h1>Panel de Administración</h1>
-            <p>Bienvenido, <?php echo htmlspecialchars(currentUserName()); ?></p>
+            <p>Bienvenido, <?php echo htmlspecialchars(trim(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '')) ?: ($_SESSION['user_email'] ?? 'Admin')); ?></p>
         </div>
         
-        <div class="admin-nav">
-            <ul>
-                <li><a href="index.php" class="active">Productos</a></li>
-                <li><a href="categories.php">Categorías</a></li>
-                <li><a href="orders.php">Pedidos</a></li>
-                <li><a href="settings.php">Configuración</a></li>
-            </ul>
-        </div>
+        <?php include __DIR__ . '/../includes/admin_navbar.php'; ?>
         
         <div class="admin-content">
+            <?php if (!empty($categories_notice)): ?>
+            <div id="catRepairBox" style="margin: 12px 0; padding: 10px 14px; border-radius: 10px; border:1px solid rgba(255,255,255,.14); background: linear-gradient(180deg, rgba(28,37,65,.98), rgba(28,37,65,.92)); color:#e5e7eb;">
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                <strong>Mantenimiento:</strong> <?php echo htmlspecialchars($categories_notice); ?>
+                <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <button id="retryRepair" class="btn btn-primary"><i class="fas fa-wrench"></i> Reintentar reparación</button>
+                    <span id="repairStatus" style="color:#cbd5e1;"></span>
+                </div>
+            </div>
+            <?php endif; ?>
             <a href="#" class="btn-add" id="addProductBtn">
                 <i class="fas fa-plus"></i> Agregar Producto
             </a>
@@ -484,12 +299,12 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 <div class="form-group">
                     <label for="productPrice">Precio (CFA)</label>
-                    <input type="number" id="productPrice" name="price" step="0.01" required>
+                    <input type="number" id="productPrice" name="price" step="0.01" min="0" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="productWeight">Peso (kg)</label>
-                    <input type="number" id="productWeight" name="weight" step="0.01" required>
+                    <input type="number" id="productWeight" name="weight" step="0.01" min="0" required>
                 </div>
                 
                 <div class="form-group">
@@ -545,11 +360,11 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="form-group">
                     <label for="edit_price">Precio (CFA)</label>
-                    <input type="number" id="edit_price" name="price" step="0.01" required>
+                    <input type="number" id="edit_price" name="price" step="0.01" min="0" required>
                 </div>
                 <div class="form-group">
                     <label for="edit_weight">Peso (kg)</label>
-                    <input type="number" id="edit_weight" name="weight" step="0.01" required>
+                    <input type="number" id="edit_weight" name="weight" step="0.01" min="0" required>
                 </div>
                 <div class="form-group">
                     <label for="edit_image_url">URL de la Imagen</label>
@@ -700,7 +515,14 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 tagsBox.className = 'tags';
                                 info.insertBefore(tagsBox, info.querySelector('.product-actions'));
                             }
-                            tagsBox.innerHTML = tagsArr.map(t=>`<span class="tag-chip">#${t.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`).join('');
+                            // Clear and append safely
+                            while (tagsBox.firstChild) tagsBox.removeChild(tagsBox.firstChild);
+                            tagsArr.forEach(t => {
+                                const chip = document.createElement('span');
+                                chip.className = 'tag-chip';
+                                chip.textContent = '#' + t;
+                                tagsBox.appendChild(chip);
+                            });
                         }
                     }
                     editModal.style.display = 'none';
@@ -708,6 +530,45 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     toast.error('No se pudo actualizar: ' + err.message);
                 }
             });
+
+            // Repair categories handler
+            const retryBtn = document.getElementById('retryRepair');
+            const statusEl = document.getElementById('repairStatus');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', async ()=>{
+                    statusEl.textContent = 'Reparando…';
+                    try {
+                        const fd = new FormData();
+                        try { fd.append('csrf_token', '<?php echo htmlspecialchars(csrf_token()); ?>'); } catch(e){}
+                        const res = await fetch('repair_categories.php', { method: 'POST', body: fd });
+                        const data = await res.json();
+                        if (data.success) {
+                            statusEl.textContent = 'Tabla recreada. Recargando…';
+                            setTimeout(()=> location.reload(), 900);
+                        } else {
+                            statusEl.textContent = 'No se pudo reparar automáticamente.';
+                            if (data.manual) {
+                                const box = document.getElementById('catRepairBox');
+                                const steps = document.createElement('div');
+                                steps.style.marginTop = '8px';
+                                const title = document.createElement('strong');
+                                title.textContent = data.manual.title + ':';
+                                steps.appendChild(title);
+                                const ul = document.createElement('ol');
+                                data.manual.steps.forEach(s=>{ const li=document.createElement('li'); li.textContent = s; ul.appendChild(li); });
+                                steps.appendChild(ul);
+                                const note = document.createElement('div');
+                                note.style.opacity = '0.85';
+                                note.textContent = data.manual.note || '';
+                                steps.appendChild(note);
+                                box.appendChild(steps);
+                            }
+                        }
+                    } catch (err) {
+                        statusEl.textContent = 'Error de red: ' + (err?.message || err);
+                    }
+                });
+            }
         });
     </script>
     <script src="../js/toast.js"></script>

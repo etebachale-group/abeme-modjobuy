@@ -666,4 +666,99 @@ function currentUserHasPermission(PDO $pdo, string $permission): bool {
     $uid = (int)($_SESSION['user_id'] ?? 0);
     return userHasPermission($pdo, $uid, $permission);
 }
+
+// ============================
+// Publicidad: Carrusel de Banners
+// ============================
+
+function getActiveAds($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT id, image_path, title, link_url FROM ad_banners WHERE is_active = 1 ORDER BY sort_order ASC, id DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function getAllAds($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT * FROM ad_banners ORDER BY sort_order ASC, id DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function createAd($pdo, array $data) {
+    $sql = "INSERT INTO ad_banners (image_path, title, link_url, is_active, sort_order) VALUES (:image_path, :title, :link_url, :is_active, :sort_order)";
+    $stmt = $pdo->prepare($sql);
+    $payload = [
+        ':image_path' => $data['image_path'] ?? '',
+        ':title' => $data['title'] ?? null,
+        ':link_url' => $data['link_url'] ?? null,
+        ':is_active' => isset($data['is_active']) ? (int)!!$data['is_active'] : 1,
+        ':sort_order' => isset($data['sort_order']) ? (int)$data['sort_order'] : 0,
+    ];
+    if ($payload[':image_path'] === '') return false;
+    try {
+        $ok = $stmt->execute($payload);
+        return $ok ? (int)$pdo->lastInsertId() : false;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function toggleAdActive($pdo, int $id, bool $active) {
+    try {
+        $stmt = $pdo->prepare("UPDATE ad_banners SET is_active = ? WHERE id = ?");
+        return $stmt->execute([$active ? 1 : 0, $id]);
+    } catch (Exception $e) { return false; }
+}
+
+function deleteAd($pdo, int $id) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM ad_banners WHERE id = ?");
+        return $stmt->execute([$id]);
+    } catch (Exception $e) { return false; }
+}
+
+function reorderAd($pdo, int $id, int $sort_order) {
+    try {
+        $stmt = $pdo->prepare("UPDATE ad_banners SET sort_order = ? WHERE id = ?");
+        return $stmt->execute([$sort_order, $id]);
+    } catch (Exception $e) { return false; }
+}
+
+function updateAd($pdo, int $id, array $data) {
+    // Only allow updating these fields (no image change here)
+    $fields = [];
+    $params = [];
+    if (array_key_exists('title', $data)) { $fields[] = 'title = ?'; $params[] = (string)$data['title']; }
+    if (array_key_exists('link_url', $data)) { $fields[] = 'link_url = ?'; $params[] = (string)$data['link_url']; }
+    if (array_key_exists('is_active', $data)) { $fields[] = 'is_active = ?'; $params[] = (int)!!$data['is_active']; }
+    if (array_key_exists('sort_order', $data)) { $fields[] = 'sort_order = ?'; $params[] = (int)$data['sort_order']; }
+    if (empty($fields)) return true; // nothing to update
+    $params[] = $id;
+    $sql = 'UPDATE ad_banners SET ' . implode(', ', $fields) . ' WHERE id = ?';
+    try {
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
+    } catch (Exception $e) { return false; }
+}
+
+function updateAdImage($pdo, int $id, string $image_path) {
+    if ($id <= 0 || $image_path === '') return false;
+    try {
+        $stmt = $pdo->prepare("UPDATE ad_banners SET image_path = ? WHERE id = ?");
+        return $stmt->execute([$image_path, $id]);
+    } catch (Exception $e) { return false; }
+}
+
+function getAdById($pdo, int $id) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM ad_banners WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    } catch (Exception $e) { return null; }
+}
 ?>

@@ -1,71 +1,41 @@
 document.addEventListener('DOMContentLoaded', function() {
     const menuToggle = document.getElementById('menuToggle');
+    const navContainer = document.querySelector('.header .nav-container');
     const navMenu = document.getElementById('navMenu');
-    const body = document.body;
+    if (!menuToggle || !navContainer || !navMenu) return;
 
-    // Función para abrir el menú
+    const setExpanded = (val)=> menuToggle.setAttribute('aria-expanded', val ? 'true' : 'false');
+    const icon = () => menuToggle.querySelector('i');
+    const setIcon = (open)=>{ if (!icon()) return; icon().classList.toggle('fa-bars', !open); icon().classList.toggle('fa-times', !!open); };
+
     function openMenu() {
-        navMenu.classList.add('show');
-        body.classList.add('menu-open');
-        const icon = menuToggle.querySelector('i');
-        icon.classList.remove('fa-bars');
-        icon.classList.add('fa-times');
+        navContainer.classList.add('open');
+        setExpanded(true);
+        setIcon(true);
     }
 
-    // Función para cerrar el menú
     function closeMenu() {
-        navMenu.classList.remove('show');
-        body.classList.remove('menu-open');
-        const icon = menuToggle.querySelector('i');
-        icon.classList.remove('fa-times');
-        icon.classList.add('fa-bars');
+        navContainer.classList.remove('open');
+        setExpanded(false);
+        setIcon(false);
     }
 
-    // Toggle del menú
-    menuToggle.addEventListener('click', function(e) {
-        e.stopPropagation();
-        if (navMenu.classList.contains('show')) {
-            closeMenu();
-        } else {
-            openMenu();
+    function flip(e){ e?.stopPropagation?.(); const willOpen = !navContainer.classList.contains('open'); willOpen ? openMenu() : closeMenu(); }
+
+    menuToggle.addEventListener('click', flip);
+    menuToggle.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(e); }});
+
+    // Close when clicking a link
+    navMenu.querySelectorAll('a').forEach(a=> a.addEventListener('click', closeMenu));
+
+    // Close on outside click (mobile)
+    document.addEventListener('click', (e)=>{
+        if (window.innerWidth<=768){
+            const within = e.target.closest && (e.target.closest('.header .nav-container') || e.target.closest('#menuToggle'));
+            if(!within) closeMenu();
         }
     });
 
-    // Cerrar menú al hacer clic fuera
-    document.addEventListener('click', function(e) {
-        if (!navMenu.contains(e.target) && !menuToggle.contains(e.target) && navMenu.classList.contains('show')) {
-            closeMenu();
-        }
-    });
-
-    // Cerrar menú al presionar la tecla Escape
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && navMenu.classList.contains('show')) {
-            closeMenu();
-        }
-    });
-
-    // Prevenir que los clics dentro del menú lo cierren
-    navMenu.addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
-
-    // Cerrar menú en modo desktop
-    window.addEventListener('resize', function() {
-        if (window.innerWidth >= 768) {
-            menuToggle.classList.remove('active');
-            navMenu.classList.remove('active');
-            body.style.overflow = '';
-        }
-    });
-
-    // Añadir transición suave al cambiar entre móvil y desktop
-    let resizeTimer;
-    window.addEventListener('resize', function() {
-        document.body.classList.add('resize-transition-stopper');
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            document.body.classList.remove('resize-transition-stopper');
-        }, 400);
-    });
+    // Guard for desktop
+    window.addEventListener('resize', ()=>{ if(window.innerWidth>768){ closeMenu(); } });
 });

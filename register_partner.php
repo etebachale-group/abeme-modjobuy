@@ -479,7 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   <div class="d-flex flex-wrap align-items-center gap-3">
                     <?php foreach ($AVAILABLE_PERMS as $key => $label): ?>
                       <label class="form-check form-switch m-0 d-flex align-items-center" for="perm_<?php echo (int)$u['id']; ?>_<?php echo htmlspecialchars($key); ?>">
-                        <input class="form-check-input me-2 js-perm-switch" type="checkbox" id="perm_<?php echo (int)$u['id']; ?>_<?php echo htmlspecialchars($key); ?>" name="permissions[]" value="<?php echo htmlspecialchars($key); ?>" <?php echo in_array($key, $userPerms, true) ? 'checked' : ''; ?>>
+                        <input class="form-check-input me-2 js-perm-switchm, " type="checkbox" id="perm_<?php echo (int)$u['id']; ?>_<?php echo htmlspecialchars($key); ?>" name="permissions[]" value="<?php echo htmlspecialchars($key); ?>" <?php echo in_array($key, $userPerms, true) ? 'checked' : ''; ?>>
                         <span class="small"><?php echo htmlspecialchars($label); ?></span>
                       </label>
                     <?php endforeach; ?>

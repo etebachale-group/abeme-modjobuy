@@ -20,6 +20,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
+        // Ensure products has stock column
+        try { $pdo->exec("ALTER TABLE products ADD COLUMN stock INT NULL"); } catch (Exception $e) {}
+
+        // Fetch product for this cart item and validate stock if managed
+        $pstmt = $pdo->prepare("SELECT p.stock FROM cart c JOIN products p ON p.id = c.product_id WHERE c.id = ? AND c.user_id = ?");
+        $pstmt->execute([$item_id, currentUserId()]);
+        $prow = $pstmt->fetch(PDO::FETCH_ASSOC);
+        if ($prow && $prow['stock'] !== null) {
+            $available = max(0, (int)$prow['stock']);
+            if ($quantity > $available) {
+                $quantity = $available;
+            }
+            if ($quantity <= 0) {
+                // Remove item if no stock
+                $del = $pdo->prepare("DELETE FROM cart WHERE id = ? AND user_id = ?");
+                $del->execute([$item_id, currentUserId()]);
+                echo json_encode(['success' => true, 'message' => 'Sin stock, se eliminó del carrito', 'count' => 0]);
+                return;
+            }
+        }
+
         $stmt = $pdo->prepare("UPDATE cart SET quantity = ? WHERE id = ? AND user_id = ?");
         $stmt->execute([$quantity, $item_id, currentUserId()]);
 

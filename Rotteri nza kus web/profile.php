@@ -109,16 +109,18 @@ try {
         }
         
         .profile-info {
-            background: white;
+            background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85));
+            color: #e5e7eb;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,.08);
         }
         
         .profile-info h2 {
             margin-top: 0;
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
+            color: #e5e7eb;
+            border-bottom: 2px solid rgba(255,255,255,.12);
             padding-bottom: 10px;
         }
         
@@ -134,36 +136,40 @@ try {
             font-weight: bold;
             display: block;
             margin-bottom: 5px;
-            color: #2c3e50;
+            color: #e5e7eb;
         }
         
         .profile-orders {
-            background: white;
+            background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85));
+            color: #e5e7eb;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,.08);
         }
         
         .orders-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            color: #e5e7eb;
         }
         
         .orders-table th,
         .orders-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid rgba(255,255,255,.12);
         }
         
         .orders-table th {
-            background: #f2f2f2;
+            background: rgba(255,255,255,.06);
             font-weight: bold;
+            color: #e5e7eb;
         }
         
         .orders-table tr:hover {
-            background: #f9f9f9;
+            background: rgba(255,255,255,.04);
         }
         
         .order-status {
@@ -205,49 +211,16 @@ try {
         
         .no-orders {
             text-align: center;
-            padding: 40px;
-            color: #666;
+            padding: 32px;
+            color: #e5e7eb;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 10px;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <img src="img/logo-without-bg.png" alt="Rotteri Nza Kus Logo">
-                    <h1>Rotteri Nza Kus</h1>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-menu">
-                        <li><a href="index.php">Inicio</a></li>
-                        <li><a href="index.php#products">Productos</a></li>
-                        <li><a href="index.php#contact">Contacto</a></li>
-                        <?php if (isAuthenticated()): ?>
-                            <?php if (isAdmin()): ?>
-                                <li><a href="admin/index.php">Panel Admin</a></li>
-                                <li><a href="profile.php" class="active">Mi Perfil</a></li>
-                            <?php else: ?>
-                                <li><a href="profile.php" class="active">Mi Perfil</a></li>
-                            <?php endif; ?>
-                            <li><a href="logout.php">Cerrar Sesión</a></li>
-                        <?php else: ?>
-                            <li><a href="login.php">Iniciar Sesión</a></li>
-                            <li><a href="register.php">Registrarse</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-                <div class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </div>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php include __DIR__ . '/includes/layout_header.php'; ?>
 
     <div class="profile-container">
         <div class="profile-header">

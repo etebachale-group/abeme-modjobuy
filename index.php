@@ -7,7 +7,7 @@ require_once 'includes/functions.php';
 <?php include 'includes/header.php'; ?>
 
     <!-- Sección Hero -->
-    <section class="hero section">
+    <section class="hero section" style="background-image: linear-gradient(rgba(15,40,23,0.65), rgba(22,64,36,0.22)), url('pub/banner1.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
         <div class="container">
             <div class="hero-content">
                 <h2 class="section-title">Conectando Ghana y Guinea Ecuatorial</h2>
@@ -16,6 +16,38 @@ require_once 'includes/functions.php';
             </div>
         </div>
     </section>
+
+    <!-- Carrusel Publicitario -->
+    <?php $ads = function_exists('getActiveAds') ? getActiveAds($pdo) : []; ?>
+    <?php if (!empty($ads)): ?>
+    <section class="section" aria-label="Publicidad">
+        <div class="container">
+            <div class="carousel half" id="adsCarousel">
+                <div class="carousel-track">
+                    <?php foreach ($ads as $ad): ?>
+                    <div class="carousel-slide">
+                        <?php if (!empty($ad['link_url'])): ?>
+                        <a href="<?php echo htmlspecialchars($ad['link_url']); ?>" target="_blank" rel="noopener">
+                            <img src="<?php echo htmlspecialchars($ad['image_path']); ?>" alt="<?php echo htmlspecialchars($ad['title'] ?? 'Publicidad'); ?>">
+                        </a>
+                        <?php else: ?>
+                        <img src="<?php echo htmlspecialchars($ad['image_path']); ?>" alt="<?php echo htmlspecialchars($ad['title'] ?? 'Publicidad'); ?>">
+                        <?php endif; ?>
+                        <?php if (!empty($ad['title'])): ?>
+                        <div class="carousel-caption"><?php echo htmlspecialchars($ad['title']); ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <div class="carousel-nav">
+                    <button class="carousel-btn prev" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="carousel-dots" aria-label="Paginación del carrusel"></div>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- Sección de Seguimiento -->
     <section id="tracking" class="section">

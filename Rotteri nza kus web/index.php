@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
+require_once 'includes/functions.php';
 
 // Ensure minimal store tables exist to avoid fatal errors on fresh setups
 try {
@@ -68,6 +69,9 @@ try {
     $stmt->execute();
     $banners = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) { $banners = []; }
+
+// Base path (subfolder aware)
+$__rk_basePath = rk_base_path();
 ?>
 
 <!DOCTYPE html>
@@ -103,53 +107,23 @@ try {
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <img src="img/logo-without-bg.png" alt="Rotteri Nza Kus Logo">
-                    <h1>Rotteri Nza Kus</h1>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-menu">
-                        <li><a href="index.php" class="active">Inicio</a></li>
-                        <li><a href="#products">Productos</a></li>
-                        <li><a href="#contact">Contacto</a></li>
-                        <?php if (isAuthenticated()): ?>
-                            <?php if (isAdmin()): ?>
-                                <li><a href="admin/index.php">Panel Admin</a></li>
-                            <?php else: ?>
-                                <li><a href="profile.php">Mi Perfil</a></li>
-                            <?php endif; ?>
-                            <li><a href="logout.php">Cerrar Sesión</a></li>
-                        <?php else: ?>
-                            <li><a href="login.php">Iniciar Sesión</a></li>
-                            <li><a href="register.php">Registrarse</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-                <div class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </div>
-                <?php if (isAuthenticated()) { include __DIR__ . '/includes/notifications_ui.php'; } ?>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php include __DIR__ . '/includes/layout_header.php'; ?>
 
     <!-- Promo Carousel -->
     <?php if (!empty($banners)): ?>
-    <section class="promo-carousel" aria-label="Promociones">
+    <section class="promo-carousel" id="promos" aria-label="Promociones">
         <div class="promo-track" id="promoTrack">
             <?php foreach ($banners as $b): ?>
             <div class="promo-slide">
                 <?php if (!empty($b['image_url'])): ?>
-                    <?php $__img = (string)($b['image_url'] ?? ''); if (strpos($__img,'../')===0) { $__img = substr($__img,3); } ?>
-                    <img src="<?php echo htmlspecialchars($__img); ?>" alt="<?php echo htmlspecialchars($b['title'] ?: 'Promoción'); ?>">
+                    <?php $__raw = (string)($b['image_url'] ?? ''); $__img = rk_banner_public_url($__raw, $__rk_basePath); ?>
+                    <?php if ($__img && rk_banner_exists($__raw)): ?>
+                        <img src="<?php echo htmlspecialchars($__img, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($b['title'] ?: 'Promoción', ENT_QUOTES, 'UTF-8'); ?>" loading="lazy" decoding="async" onerror="this.style.display='none'; this.parentNode.style.background='linear-gradient(135deg,#1c2541,#3a506b)';">
+                    <?php else: ?>
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1c2541,#3a506b);color:#94a3b8;font-size:.85rem;font-weight:600;">
+                            Imagen no encontrada
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <div class="promo-overlay">
                     <?php if (!empty($b['title'])): ?><h3 class="promo-title"><?php echo htmlspecialchars($b['title']); ?></h3><?php endif; ?>
@@ -200,30 +174,40 @@ try {
             <div class="products-grid" id="productsGrid">
                 <?php if (count($products) > 0): ?>
                     <?php foreach ($products as $product): ?>
-                        <div class="product-card" data-category="<?php echo $product['category_id']; ?>" data-product-id="<?php echo $product['id']; ?>">
+                        <?php
+                            $pid = (int)($product['id'] ?? 0);
+                            $catId = isset($product['category_id']) ? (int)$product['category_id'] : 0;
+                            $pname = htmlspecialchars((string)($product['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+                            $pcat = htmlspecialchars((string)($product['category_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+                            $pdesc = htmlspecialchars((string)substr((string)($product['description'] ?? ''), 0, 100), ENT_QUOTES, 'UTF-8');
+                            $pimg = htmlspecialchars((string)($product['image_url'] ?? ''), ENT_QUOTES, 'UTF-8');
+                            $pprice = number_format((float)($product['price'] ?? 0), 2);
+                            $pweight = htmlspecialchars((string)($product['weight'] ?? ''), ENT_QUOTES, 'UTF-8');
+                        ?>
+                        <div class="product-card" data-category="<?php echo $catId; ?>" data-product-id="<?php echo $pid; ?>">
                             <div class="product-image">
-                                <img src="<?php echo $product['image_url']; ?>" alt="<?php echo $product['name']; ?>" loading="lazy">
+                                <img src="<?php echo $pimg; ?>" alt="<?php echo $pname; ?>" loading="lazy">
                             </div>
                             <div class="product-info">
-                                <h3 class="product-name"><?php echo $product['name']; ?></h3>
-                                <p class="product-category"><?php echo $product['category_name']; ?></p>
-                                <p class="product-description"><?php echo substr($product['description'], 0, 100); ?>...</p>
+                                <h3 class="product-name"><?php echo $pname; ?></h3>
+                                <p class="product-category"><?php echo $pcat; ?></p>
+                                <p class="product-description"><?php echo $pdesc; ?>...</p>
                                 <div class="product-details">
-                                    <span class="product-price">CFA <?php echo number_format($product['price'], 2); ?></span>
-                                    <span class="product-weight"><?php echo $product['weight']; ?> kg</span>
+                                    <span class="product-price">CFA <?php echo $pprice; ?></span>
+                                    <span class="product-weight"><?php echo $pweight; ?> kg</span>
                                 </div>
                                 <?php if (!empty($product['tags'])): ?>
                                 <div class="tags" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
                                     <?php foreach (array_filter(array_map('trim', explode(',', (string)$product['tags']))) as $tg): ?>
-                                        <span class="tag-chip" style="background:#f1f2f6;color:#34495e;padding:4px 8px;border-radius:12px;font-size:.8rem;">#<?php echo htmlspecialchars($tg); ?></span>
+                                        <span class="tag-chip">#<?php echo htmlspecialchars($tg, ENT_QUOTES, 'UTF-8'); ?></span>
                                     <?php endforeach; ?>
                                 </div>
                                 <?php endif; ?>
                                 <div class="product-actions">
-                                    <button class="btn btn-cart" data-product-id="<?php echo $product['id']; ?>">
+                                    <button class="btn btn-cart" data-product-id="<?php echo $pid; ?>">
                                         <i class="fas fa-shopping-cart"></i> Añadir al carrito
                                     </button>
-                                    <button class="btn btn-buy" data-product-id="<?php echo $product['id']; ?>">
+                                    <button class="btn btn-buy" data-product-id="<?php echo $pid; ?>">
                                         <i class="fas fa-bolt"></i> Comprar
                                     </button>
                                 </div>
@@ -272,13 +256,6 @@ try {
             </div>
         </div>
     </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 Rotteri Nza Kus. Todos los derechos reservados.</p>
-        </div>
-    </footer>
 
         <script src="js/script.js"></script>
         <?php include __DIR__ . '/includes/cart_ui.php'; ?>
@@ -338,10 +315,20 @@ try {
                                 const qEl = document.getElementById('searchFilter');
                                 const catEl = document.getElementById('categoryFilter');
                                 const grid = document.getElementById('productsGrid');
+                                const esc = (v)=> String(v==null?'':v)
+                                        .replace(/&/g,'&amp;')
+                                        .replace(/</g,'&lt;')
+                                        .replace(/>/g,'&gt;')
+                                        .replace(/"/g,'&quot;')
+                                        .replace(/'/g,'&#39;');
+                                const isSafeUrl = (u)=>{
+                                    if (!u) return false;
+                                    try { const low = String(u).trim().toLowerCase(); return !(low.startsWith('javascript:') || low.startsWith('data:')); } catch { return false; }
+                                };
                                 let controller;
                                 async function search(){
-                                        const q = qEl.value.trim();
-                                        const c = catEl.value.trim();
+                                        const q = qEl?.value?.trim?.() || '';
+                                        const c = catEl?.value?.trim?.() || '';
                                         try {
                                                 if (controller) controller.abort();
                                                 controller = new AbortController();
@@ -364,25 +351,34 @@ try {
                                                 return;
                                         }
                                         grid.innerHTML = items.map(p => {
-                                            const tags = (p.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
-                                            const tagsHtml = tags.length ? `<div class="tags" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">${tags.map(t=>`<span class=\"tag-chip\" style=\"background:#f1f2f6;color:#34495e;padding:4px 8px;border-radius:12px;font-size:.8rem;\">#${t.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`).join('')}</div>` : '';
+                                            const tags = String(p.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
+                                            const tagsHtml = tags.length ? `<div class="tags" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">${tags.map(t=>`<span class=\"tag-chip\">#${esc(t)}</span>`).join('')}</div>` : '';
+                                            const name = esc(p.name||'');
+                                            const cat = esc(p.category_name||'');
+                                            const desc = esc((p.description||'').substring(0,100));
+                                            const pid = Number(p.id||0) || 0;
+                                            const catId = esc(p.category_id||'');
+                                            const img = isSafeUrl(p.image_url) ? esc(p.image_url) : '';
+                                            const weight = esc(p.weight||0);
+                                            const price = Number(p.price||0).toFixed(2);
+                                            const outOfStock = (p.stock !== undefined && p.stock !== null && Number(p.stock) <= 0);
                                             return `
-                                                <div class="product-card" data-category="${p.category_id || ''}" data-product-id="${p.id}">
+                                                <div class="product-card" data-category="${catId}" data-product-id="${pid}">
                                                     <div class="product-image">
-                                                        <img src="${p.image_url || ''}" alt="${(p.name||'').replace(/"/g,'&quot;')}" loading="lazy">
+                                                        <img src="${img}" alt="${name}" loading="lazy">
                                                     </div>
                                                     <div class="product-info">
-                                                        <h3 class="product-name">${p.name || ''}</h3>
-                                                        <p class="product-category">${p.category_name || ''}</p>
-                                                        <p class="product-description">${(p.description||'').substring(0,100)}...</p>
+                                                        <h3 class="product-name">${name}</h3>
+                                                        <p class="product-category">${cat}</p>
+                                                        <p class="product-description">${desc}...</p>
                                                         <div class="product-details">
-                                                            <span class="product-price">CFA ${Number(p.price||0).toFixed(2)}</span>
-                                                            <span class="product-weight">${p.weight || 0} kg</span>
+                                                            <span class="product-price">CFA ${price}</span>
+                                                            <span class="product-weight">${weight} kg</span>
                                                         </div>
                                                 ${tagsHtml}
                                                         <div class="product-actions">
-                                                            <button class="btn btn-cart" data-product-id="${p.id}"><i class="fas fa-shopping-cart"></i> Añadir al carrito</button>
-                                                            <button class="btn btn-buy" data-product-id="${p.id}"><i class="fas fa-bolt"></i> Comprar</button>
+                                                            <button class="btn btn-cart" data-product-id="${pid}" ${outOfStock?'disabled aria-disabled="true"':''}><i class="fas fa-shopping-cart"></i> ${outOfStock?'Agotado':'Añadir al carrito'}</button>
+                                                            <button class="btn btn-buy" data-product-id="${pid}" ${outOfStock?'disabled aria-disabled="true"':''}><i class="fas fa-bolt"></i> Comprar</button>
                                                         </div>
                                                     </div>
                                                 </div>
