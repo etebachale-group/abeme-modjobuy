@@ -1,44 +1,5 @@
 
-/* Default (mobile) styles */
-.menu-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.5rem;
-}
-
-.nav-menu {
-    display: none;
-    position: fixed;
-    top: var(--header-height);
-    left: 0;
-    width: 100%;
-    background: var(--primary);
-    flex-direction: column;
-    padding: 1rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    list-style: none;
-    margin: 0;
-    z-index: 1000;
-}
-
-.nav-menu.active {
-    display: flex;
-}
-
-.nav-link {
-    color: white;
-    text-decoration: none;
-    padding: 0.75rem 1rem;
-    display: block;
-    width: 100%;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
+/* Nav/menu styles removed intentionally */
 
 /* Estilos responsive para móvil */
 @media screen and (max-width: 768px) {
@@ -100,18 +61,7 @@
         max-height: 300px;
     }
 
-    .navbar {
-        padding: 10px;
-    }
-
-    .nav-links {
-        gap: 10px;
-    }
-
-    .nav-link {
-        font-size: 0.9rem;
-        padding: 5px 8px;
-    }
+    /* navbar/link responsive styles removed */
 
     .btn {
         padding: 8px 15px;
@@ -148,54 +98,4 @@
 }
 
 /* Desktop styles */
-@media (min-width: 769px) {
-    .menu-toggle {
-        display: none;
-    }
-
-    .nav-menu {
-        display: flex;
-        position: static;
-        flex-direction: row;
-        width: auto;
-        background: transparent;
-        box-shadow: none;
-        padding: 0;
-        gap: 1.5rem;
-    }
-
-    .nav-link {
-        border-bottom: none;
-        width: auto;
-    }
-}
-        flex-direction: row;
-        background: transparent;
-        padding: 0;
-        box-shadow: none;
-        width: auto;
-    }
-
-    .nav-link {
-        border-bottom: none;
-        width: auto;
-    }
-}
-        flex-direction: row;
-        width: auto;
-        background: transparent;
-        box-shadow: none;
-        padding: 0;
-        gap: 1.5rem;
-    }
-
-    .nav-link {
-        padding: 0.5rem 1rem;
-        border-bottom: none;
-        border-radius: 6px;
-    }
-
-    .nav-link:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-}
+/* Desktop nav/menu styles removed */

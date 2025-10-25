@@ -1,0 +1,81 @@
+/* Simple responsive carousel styles */
+.carousel {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+/* Half-size variant */
+.carousel.half { width: 50%; margin: 0 auto; }
+@media (max-width: 768px) { .carousel.half { width: 100%; } }
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s ease;
+  height: 100%;
+}
+.carousel-slide {
+  min-width: 100%;
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.carousel-slide img {
+  display: block;
+  width: 100%;
+  height: 100%; /* fill container height */
+  object-fit: contain; /* show whole image without cropping */
+}
+.carousel-caption {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  padding: .5rem .75rem;
+  border-radius: .25rem;
+  font-size: 0.95rem;
+}
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.carousel-btn {
+  pointer-events: auto;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  border: none;
+  padding: .5rem .75rem;
+  margin: 0 .5rem;
+  border-radius: .25rem;
+  cursor: pointer;
+}
+.carousel-dots {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: .5rem;
+  display: flex;
+  justify-content: center;
+  gap: .35rem;
+}
+.carousel-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(0,0,0,0.2);
+}
+.carousel-dot.active { background: #fff; }
+
+@media (max-width: 768px) {
+  .carousel-caption { font-size: 0.85rem; }
+}
+
+/* Smooth container height changes */
+.carousel { transition: height 0.3s ease; }

@@ -11,7 +11,7 @@ if (isAuthenticated()) {
 
 // Procesar formulario de login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
+    $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     
     $user = authenticateUser($pdo, $email, $password);
@@ -19,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
+        $_SESSION['role'] = $user['role'] ?? 'user';
+        $_SESSION['partner_name'] = $user['partner_name'] ?? null;
         header('Location: admin.php');
         exit;
     } else {

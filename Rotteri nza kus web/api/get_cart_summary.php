@@ -14,22 +14,27 @@ try {
     $stmt->execute([currentUserId()]);
     $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $subtotal = 0;
+    $subtotal = 0.0;
     foreach ($cartItems as $item) {
-        $subtotal += $item['price'] * $item['quantity'];
+        $price = (float)$item['price'];
+        $qty = (int)$item['quantity'];
+        $subtotal += $price * $qty;
     }
 
-    // For now, shipping and taxes are 0
-    $shipping = 0;
-    $taxes = 0;
+    // Placeholder rules (can be replaced by admin-configurable settings)
+    // Shipping: flat rate if subtotal > 0
+    $shipping = $subtotal > 0 ? 5.00 : 0.00;
+    // Taxes: simple 0% for now (placeholder)
+    $taxes = 0.00;
+
     $total = $subtotal + $shipping + $taxes;
 
     echo json_encode([
         'success' => true,
-        'subtotal' => $subtotal,
-        'shipping' => $shipping,
-        'taxes' => $taxes,
-        'total' => $total
+        'subtotal' => round($subtotal, 2),
+        'shipping' => round($shipping, 2),
+        'taxes' => round($taxes, 2),
+        'total' => round($total, 2)
     ]);
 
 } catch (PDOException $e) {

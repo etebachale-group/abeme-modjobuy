@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $price = $_POST['price'] ?? '';
     $weight = $_POST['weight'] ?? '';
     $image_url = $_POST['image_url'] ?? '';
+    $stock = $_POST['stock'] ?? null;
     
     // Validate inputs
     $errors = [];
@@ -39,9 +40,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
             
-            // Update product
-            $stmt = $pdo->prepare("UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, weight = ?, image_url = ? WHERE id = ?");
-            $stmt->execute([$category_id, $name, $description, $price, $weight, $image_url, $product_id]);
+            // Ensure stock column exists
+            try { $pdo->exec("ALTER TABLE products ADD COLUMN stock INT NULL"); } catch (Exception $ignore) {}
+            // Normalize stock
+            $stockVal = (isset($stock) && $stock !== '' && $stock !== null) ? max(0, (int)$stock) : null;
+            // Update product including stock
+            $stmt = $pdo->prepare("UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, weight = ?, image_url = ?, stock = ? WHERE id = ?");
+            $stmt->execute([$category_id, $name, $description, $price, $weight, $image_url, $stockVal, $product_id]);
             
             // Log the action
             $stmt = $pdo->prepare("INSERT INTO product_history (product_id, admin_id, change_type, field_name, new_value) VALUES (?, ?, 'updated', 'product', ?)");

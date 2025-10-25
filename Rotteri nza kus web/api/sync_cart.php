@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $validatedCart = [];
 
     try {
+        // ensure products has stock column (nullable for installs without stock management)
+        try { $pdo->exec("ALTER TABLE products ADD COLUMN stock INT NULL"); } catch (Exception $e) {}
         // Start a transaction for atomicity
         $pdo->beginTransaction();
 
@@ -37,8 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
 
-            // Fetch product details from database to validate price, active status, and stock
-            $stmt = $pdo->prepare("SELECT id, name, price, image_url, stock, is_active FROM products WHERE id = ?");
+            // Fetch product details from database to validate price, active status and stock
+            $stmt = $pdo->prepare("SELECT id, name, price, image_url, is_active, stock FROM products WHERE id = ?");
             $stmt->execute([$productId]);
             $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -47,14 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
 
-            // Validate stock
-            if ($product['stock'] < $quantity) {
-                // Adjust quantity to available stock, or skip if 0 stock
-                $quantity = $product['stock'];
-                if ($quantity <= 0) {
-                    continue; // Skip if no stock available
+            // Validate stock if available in schema (null means no stock control)
+            $available = (isset($product['stock']) && $product['stock'] !== null) ? (int)$product['stock'] : null;
+            if ($available !== null) {
+                if ($available < $quantity) {
+                    $quantity = $available;
+                    if ($quantity <= 0) {
+                        continue; // Skip if no stock available
+                    }
                 }
-                // Optionally, add a message to the response about adjusted quantity
             }
 
             // Insert/Update item in server-side cart

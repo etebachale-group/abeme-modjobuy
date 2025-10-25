@@ -1,0 +1,4 @@
+2025-09-25T00:44:12+02:00 :: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'rotteri_nza_kus.users' doesn't exist
+2025-09-25T00:45:25+02:00 :: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'rotteri_nza_kus.users' doesn't exist
+2025-09-25T00:47:46+02:00 :: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'rotteri_nza_kus.users' doesn't exist
+2025-09-25T00:49:10+02:00 :: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'rotteri_nza_kus.users' doesn't exist
