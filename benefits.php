@@ -58,6 +58,19 @@
     // Beneficio neto = beneficio total - gastos
     $netProfit = $totalProfit - $totalExpenses;
 
+    // Calcular total pagado a socios desde los monederos
+    $totalPaidOut = 0;
+    try {
+        $stmt = $pdo->query("SELECT SUM(amount) as total_paid_out FROM partner_wallet_transactions WHERE type = 'deposit'");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $totalPaidOut = $result['total_paid_out'] ?? 0;
+    } catch (Exception $e) {
+        // La tabla aún no existe, no hacer nada
+    }
+
+    // Saldo real disponible = Beneficio Neto - Total Pagado
+    $realNetProfit = $netProfit - $totalPaidOut;
+
     // Asegurar tabla partner_benefits y filas de socios; luego obtener saldos actuales
     try {
         // Crear tabla si no existe (mínimo necesario)
@@ -127,6 +140,7 @@
     <main class="main-content wallet-page">
         <section class="dashboard-section">
             <div class="stats-summary">
+                <?php if (currentUserHasPermission($pdo, 'view_ingresos_totales')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-money-bill-wave"></i>
@@ -136,7 +150,9 @@
                         <p class="stat-value">XAF <?php echo number_format($totalRevenue, 2, ',', '.'); ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (currentUserHasPermission($pdo, 'view_beneficios_totales')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-chart-line"></i>
@@ -146,7 +162,9 @@
                         <p class="stat-value">XAF <?php echo number_format($totalProfit, 2, ',', '.'); ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (currentUserHasPermission($pdo, 'view_envios_entregados')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-box"></i>
@@ -156,6 +174,9 @@
                         <p class="stat-value"><?php echo $totalShipments; ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
+
+                <?php if (currentUserHasPermission($pdo, 'view_kilos_entregados')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-weight-hanging"></i>
@@ -165,18 +186,9 @@
                         <p class="stat-value"><?php echo number_format($totalKilos, 2, ',', '.'); ?> kg</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
-                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin'): ?>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Gastos Totales</h3>
-                        <p class="stat-value">XAF <?php echo number_format($totalExpenses, 2, ',', '.'); ?></p>
-                    </div>
-                </div>
-                <?php elseif (function_exists('currentUserHasPermission') && currentUserHasPermission($pdo, 'view_benefits_totals')): ?>
+                <?php if (currentUserHasPermission($pdo, 'view_gastos_totales')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-dollar-sign"></i>
@@ -188,6 +200,7 @@
                 </div>
                 <?php endif; ?>
 
+                <?php if (currentUserHasPermission($pdo, 'view_beneficio_neto')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-hand-holding-usd"></i>
@@ -197,6 +210,19 @@
                         <p class="stat-value">XAF <?php echo number_format($netProfit, 2, ',', '.'); ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
+
+                <?php if (currentUserHasPermission($pdo, 'view_saldo_real_disponible')): ?>
+                <div class="stat-card" style="background-color: #e8f5e9;">
+                    <div class="stat-icon" style="color: #2e7d32;">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Saldo Real Disponible</h3>
+                        <p class="stat-value" style="color: #2e7d32;">XAF <?php echo number_format($realNetProfit, 2, ',', '.'); ?></p>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             </div>
 
