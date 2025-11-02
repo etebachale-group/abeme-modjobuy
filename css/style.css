@@ -10,6 +10,21 @@
     --text-light: #ffffff; /* Blanco puro para mejor contraste */
     --text-dark: rgba(255, 255, 255, 0.95); /* Blanco con mayor opacidad */
     --gray-light: #ebeef2; /* Gris más suave */
+    /* Extra variables (moved from stray block) */
+    --gray: #6c757d;
+    --gray-dark: #495057;
+    --border: #dde1e6; /* Borde más visible */
+    --success: #2ecc71;
+    --warning: #f1c40f;
+    --danger: #e74c3c;
+    --info: #3498db;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --transition: all 0.3s ease;
+    /* Common fallbacks used elsewhere */
+    --dark: #111827; /* Slate-900 */
+    --ring: #e5e7eb; /* Slate-200 */
 }
 
 .notify-arrival-btn {
@@ -74,18 +89,6 @@
     display: none;
     margin-top: 2rem;
 }
- --gray: #6c757d;
-    --gray-dark: #495057;
-    --border: #dde1e6; /* Borde más visible */
-    --success: #2ecc71;
-    --warning: #f1c40f;
-    --danger: #e74c3c;
-    --info: #3498db;
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
-    --shadow: 0 4px 6px rgba(0,0,0,0.1);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-    --transition: all 0.3s ease;
-}*
 
 * {
     margin: 0;
@@ -220,100 +223,7 @@ header {
     opacity: 0.9;
 }
 
-/* Mobile Menu Styles */
-.menu-toggle {
-    display: none;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    z-index: 1001;
-}
-
-nav ul {
-    display: flex;
-    list-style: none;
-    gap: 1.5rem;
-}
-
-nav a {
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 1.0rem;
-    transition: var(--transition);
-    padding: 0.5rem 0;
-    position: relative;
-}
-
-/* Mobile Navigation */
-@media screen and (max-width: 768px) {
-    .menu-toggle {
-        display: block;
-    }
-
-    nav ul {
-        display: none;
-        position: fixed;
-        top: var(--header-height, 4rem);
-        left: 0;
-        right: 0;
-        background: var(--primary);
-        flex-direction: column;
-        gap: 0;
-        padding: 1rem;
-        height: calc(100vh - var(--header-height, 4rem));
-        overflow-y: auto;
-    }
-
-    nav ul.show {
-        display: flex;
-    }
-
-    nav li {
-        width: 100%;
-    }
-
-    nav a {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        border-radius: 0.25rem;
-    }
-
-    nav a:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    .logo-text h1 {
-        font-size: 1.4rem;
-    }
-
-    .logo-text p {
-        display: none;
-    }
-}
-
-nav a:hover {
-    color: var(--accent);
-}
-
-nav a::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 3px;
-    background: var(--accent);
-    transition: var(--transition);
-}
-
-nav a:hover::after {
-    width: 100%;
-}
+/* Navigation/menu design styles removed to allow minimal, behavior-only header */
 
 .active {
     color: var(--accent);
@@ -367,15 +277,43 @@ nav a:hover::after {
     color: var(--primary);
 }
 
+/* Hero CTA: glassmorphism style */
+.hero .btn.btn-lg {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    backdrop-filter: saturate(140%) blur(10px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255,255,255,0.25);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.15);
+    letter-spacing: 0.2px;
+}
+.hero .btn.btn-lg:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.45);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0,0,0,0.12);
+}
+.hero .btn.btn-lg:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.hero .btn.btn-lg:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(217, 150, 40, 0.35), 0 10px 20px rgba(0,0,0,0.18);
+}
+
 /* Estilos del héroe */
 .hero {
     background:
     linear-gradient(
-        rgba(15, 40, 23, 0.75),
-        rgba(22, 64, 36, 0.248)
+        rgba(15, 40, 23, 0.65),
+        rgba(22, 64, 36, 0.22)
     ),
-    url('../pub/banner1.png') center/cover no-repeat;
-    height: 80vh;
+    url('/abeme-modjobuy/pub/banner1.png') center/cover no-repeat;
+    height: 70vh;
     display: flex;
     align-items: center;
     text-align: center;
@@ -896,7 +834,7 @@ footer {
     /* Hero sección */
     .hero {
         height: auto;
-        min-height: 60vh;
+        min-height: 50vh;
         padding: 2rem 1rem;
         margin-bottom: 1rem;
         border-radius: 0 0 20px 20px;
@@ -937,7 +875,8 @@ footer {
         padding: 0.8rem;
         border-radius: 10px;
         margin-bottom: 0.5rem;
-        -webkit-appearance: none; /* Estilo nativo iOS */
+    appearance: none;
+    -webkit-appearance: none; /* Estilo nativo iOS */
     }
 
     /* Botones */
@@ -948,6 +887,20 @@ footer {
         font-size: 1rem;
         border-radius: 25px;
         -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Hero CTA: center and reduce width on phones */
+    .hero .btn.btn-lg {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: clamp(180px, 60%, 280px);
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.7rem 1rem; /* recorta los lados */
+        font-size: 1rem;
+        border-radius: 22px;
+        text-align: center;
     }
 
     /* Tablas */
@@ -1033,7 +986,7 @@ footer {
         transform: scale(0.98);
     }
 
-    /* Bottom Navigation */
+    /* Bottom Navigation (scoped overrides below to keep header nav intact) */
     nav ul {
         position: fixed;
         bottom: 0;
@@ -1041,25 +994,83 @@ footer {
         right: 0;
         background: #ffffff;
         display: flex;
-        justify-content: space-around;
-        padding: 0.6rem;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        padding: 0.6rem 0.8rem;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         z-index: 1000;
         border-radius: 20px 20px 0 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+
+    nav ul li {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
     }
 
     nav a {
         color: var(--primary);
-        font-size: 0.4rem;
+        font-size: 0.8rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 0.3rem;
-        padding: 0.2rem;
+        padding: 0.4rem 0.6rem;
     }
 
     nav a i {
         font-size: 1.2rem;
+    }
+
+    /* Ensure site header nav is not affected by bottom nav rules */
+    .header .nav-container .nav-menu {
+        position: static !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        background: transparent !important;
+        /* Force inline horizontal menu with scroll */
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+        gap: 0.5rem !important;
+        padding: 0.25rem 0.5rem !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        z-index: 1001 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x proximity !important;
+        touch-action: pan-x !important;
+        overscroll-behavior-x: contain !important;
+    }
+    .header .nav-container .nav-menu li { 
+        flex: 0 0 auto !important; 
+        scroll-snap-align: start !important; 
+    }
+    .header .nav-container .nav-menu a {
+        color: #fff !important;
+        flex-direction: row !important;
+        font-size: clamp(0.78rem, 2.8vw, 0.95rem) !important;
+        gap: .4rem !important;
+        padding: 0.45rem 0.6rem !important;
+        line-height: 1 !important;
+        align-items: center !important;
+    }
+    .header .nav-container .nav-menu a i {
+        font-size: clamp(1rem, 3.5vw, 1.15rem) !important;
+    }
+
+    /* Hide header toggle on small screens when horizontal scroll is enabled */
+    .header .menu-toggle { 
+        display: none !important; 
     }
 
     /* Fix for iOS safe areas */
@@ -1067,6 +1078,10 @@ footer {
         body {
             padding-top: max(60px, env(safe-area-inset-top));
             padding-bottom: max(70px, env(safe-area-inset-bottom));
+        }
+        .header-container {
+            padding-left: max(1rem, env(safe-area-inset-left));
+            padding-right: max(1rem, env(safe-area-inset-right));
         }
         
         nav ul {
@@ -1084,3 +1099,14 @@ footer {
 
 }
 #tban th{background-color: var(--primary); color: white; font-weight: 600;}
+
+/* Hide scrollbars for header nav on all devices (keep scroll functional) */
+.header .nav-container .nav-menu {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+}
+.header .nav-container .nav-menu::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    background: transparent;
+}

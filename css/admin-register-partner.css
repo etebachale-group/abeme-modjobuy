@@ -1,0 +1,156 @@
+:root {
+    --primary-color: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --secondary-color: #6c757d;
+    --light-gray: #f8f9fa;
+    --medium-gray: #dee2e6;
+    --dark-gray: #495057;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --white: #fff;
+    --card-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
+    --card-border-radius: 0.5rem;
+}
+
+.admin-console-modern .nav-tabs .nav-link {
+    color: var(--secondary-color);
+    border-width: 0 0 2px 0;
+    border-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.admin-console-modern .nav-tabs .nav-link:hover {
+    border-color: var(--medium-gray);
+}
+
+.admin-console-modern .nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.admin-console-modern .tab-content {
+    background-color: var(--white);
+    padding: 1.5rem;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--card-border-radius);
+    border-top-left-radius: 0;
+}
+
+.user-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border: 1px solid var(--medium-gray);
+    border-left-width: 5px;
+    border-radius: var(--card-border-radius);
+    margin-bottom: 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.user-card:hover {
+    box-shadow: var(--card-shadow);
+    transform: translateY(-2px);
+}
+
+.user-card.role-super_admin { border-left-color: var(--danger-color); }
+.user-card.role-admin { border-left-color: var(--primary-color); }
+.user-card.role-user { border-left-color: var(--secondary-color); }
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 500;
+    font-size: 1.2rem;
+}
+
+.user-avatar.bg-super_admin { background-color: var(--danger-color); }
+.user-avatar.bg-admin { background-color: var(--primary-color); }
+.user-avatar.bg-user { background-color: var(--secondary-color); }
+
+.user-details .email {
+    font-weight: 500;
+    color: #343a40;
+    margin: 0;
+}
+
+.user-details .partner-name {
+    color: var(--dark-gray);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+#manageUserModal .modal-header {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+#manageUserModal .modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+#manageUserModal .modal-body h5 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--medium-gray);
+    color: var(--primary-color);
+}
+
+#manageUserModal .modal-body h5:first-of-type {
+    margin-top: 0;
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: var(--primary-color);
+}
+
+/* Responsive Styles */
+@media (max-width: 767px) {
+    .user-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .user-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .admin-console-modern .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .admin-console-modern .nav-tabs::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+
+    .admin-console-modern .nav-item {
+        flex-shrink: 0;
+    }
+}

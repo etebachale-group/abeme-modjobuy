@@ -10,10 +10,34 @@ $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([currentUserId()]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// For now, we'll create a simple checkout page
-// In a real implementation, this would fetch cart items from the database
+// Load cart items for the authenticated user and compute totals
 $cart_items = [];
-$total_amount = 0;
+$total_amount = 0.0;
+try {
+    $stmt = $pdo->prepare("SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price, COALESCE(p.is_active,1) AS is_active
+                           FROM cart c LEFT JOIN products p ON p.id = c.product_id
+                           WHERE c.user_id = ? ORDER BY c.created_at DESC");
+    $stmt->execute([currentUserId()]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        if (empty($row['name']) || (int)$row['is_active'] === 0) {
+            // Remove invalid/inactive entries from cart to keep it clean
+            try { $del = $pdo->prepare('DELETE FROM cart WHERE id = ?'); $del->execute([$row['cart_id']]); } catch (Exception $ignore) {}
+            continue;
+        }
+        $qty = max(1, (int)$row['quantity']);
+        $price = (float)$row['price'];
+        $total_amount += $price * $qty;
+        $cart_items[] = [
+            'product_id' => (int)$row['product_id'],
+            'name' => $row['name'],
+            'price' => $price,
+            'quantity' => $qty,
+        ];
+    }
+} catch (Exception $e) {
+    // If loading fails, leave summary empty; client JS can sync and refresh
+}
 ?>
 
 <!DOCTYPE html>
@@ -58,17 +82,19 @@ $total_amount = 0;
         }
         
         .order-summary {
-            background: white;
+            background: var(--grad-surface,linear-gradient(180deg,rgba(28,37,65,0.92),rgba(22,32,59,0.92)));
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 14px;
+            border:1px solid var(--border,rgba(148,163,184,0.22));
+            box-shadow: 0 4px 20px rgba(0,0,0,0.30);
         }
         
         .shipping-info {
-            background: white;
+            background: var(--grad-surface,linear-gradient(180deg,rgba(28,37,65,0.92),rgba(22,32,59,0.92)));
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 14px;
+            border:1px solid var(--border,rgba(148,163,184,0.22));
+            box-shadow: 0 4px 20px rgba(0,0,0,0.30);
         }
         
         .form-group {
@@ -131,45 +157,13 @@ $total_amount = 0;
             margin-top: 20px;
             text-align: right;
         }
+        .order-summary .item-name{font-weight:600;margin:0}
+        .order-summary .item-meta{color:#555;font-size:.9rem}
+        .order-summary .price{min-width:120px;text-align:right}
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <img src="img/logo-without-bg.png" alt="Rotteri Nza Kus Logo">
-                    <h1>Rotteri Nza Kus</h1>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-menu">
-                        <li><a href="index.php">Inicio</a></li>
-                        <li><a href="index.php#products">Productos</a></li>
-                        <li><a href="index.php#contact">Contacto</a></li>
-                        <?php if (isAuthenticated()): ?>
-                            <?php if (isAdmin()): ?>
-                                <li><a href="admin/index.php">Panel Admin</a></li>
-                            <?php else: ?>
-                                <li><a href="profile.php">Mi Perfil</a></li>
-                            <?php endif; ?>
-                            <li><a href="logout.php">Cerrar Sesión</a></li>
-                        <?php else: ?>
-                            <li><a href="login.php">Iniciar Sesión</a></li>
-                            <li><a href="register.php">Registrarse</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-                <div class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </div>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php include __DIR__ . '/includes/layout_header.php'; ?>
 
     <div class="checkout-container">
         <div class="checkout-header">
@@ -184,10 +178,10 @@ $total_amount = 0;
                     <?php foreach ($cart_items as $item): ?>
                         <div class="cart-item">
                             <div>
-                                <h3><?php echo htmlspecialchars($item['name']); ?></h3>
-                                <p>Cantidad: <?php echo $item['quantity']; ?></p>
+                                <p class="item-name"><?php echo htmlspecialchars($item['name']); ?></p>
+                                <p class="item-meta">Cantidad: <?php echo (int)$item['quantity']; ?> x CFA <?php echo number_format($item['price'], 2); ?></p>
                             </div>
-                            <div>
+                            <div class="price">
                                 <p>CFA <?php echo number_format($item['price'] * $item['quantity'], 2); ?></p>
                             </div>
                         </div>
@@ -257,11 +251,49 @@ $total_amount = 0;
     
     <script src="js/script.js"></script>
     <script>
-        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    (function(){
+        async function isAuthed(){ try{ const r=await fetch('api/is_authenticated.php'); const j=await r.json(); return !!j.authenticated; }catch{ return false; } }
+        async function syncLocalCart(doReload=false){
+            const cart = JSON.parse(localStorage.getItem('cart')||'[]');
+            if(!cart.length) return;
+            try{
+                await fetch('api/sync_cart.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ items: cart }) });
+                // clear local copy after sync
+                localStorage.removeItem('cart');
+                if(doReload){
+                    // Soft-reload the page content to reflect server cart in summary
+                    window.location.reload();
+                }
+            }catch(e){ console.warn('No se pudo sincronizar el carrito local', e); }
+        }
+        // On load, if authenticated, ensure any guest cart is synced so the summary shows items
+        isAuthed().then(a=>{ if(a) syncLocalCart(true); });
+        const form = document.getElementById('checkoutForm');
+        form?.addEventListener('submit', async function(e){
             e.preventDefault();
-            alert('Pedido procesado exitosamente');
-            // In a real implementation, this would send data to the server
+            // basic front validation is in script.js; proceed to create order
+            try{
+                if(await isAuthed()){
+                    // Do not reload here; we want to proceed to create the order
+                    await syncLocalCart(false);
+                }
+                const payload = {
+                    full_name: document.getElementById('fullName')?.value || '',
+                    email: document.getElementById('email')?.value || '',
+                    phone: document.getElementById('phone')?.value || '',
+                    address: document.getElementById('address')?.value || '',
+                    city: document.getElementById('city')?.value || '',
+                    country: document.getElementById('country')?.value || '',
+                    payment_method: document.getElementById('paymentMethod')?.value || ''
+                };
+                const res = await fetch('api/create_order.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                const j = await res.json();
+                if(!j.success){ throw new Error(j.message||'No se pudo crear el pedido'); }
+                window.location.href = 'order-confirmation.php?order=' + encodeURIComponent(j.order_number);
+            }catch(err){ alert(err.message); }
         });
+    })();
     </script>
 </body>
 </html>
+<?php include __DIR__ . '/includes/cart_ui.php'; ?>

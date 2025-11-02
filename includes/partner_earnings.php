@@ -1,5 +1,6 @@
 <?php
-require_once '../includes/db.php';
+// Ensure DB is loaded regardless of caller's working directory
+require_once __DIR__ . '/db.php';
 
 function updatePartnerBenefits($partnerName) {
     global $pdo;
@@ -14,9 +15,11 @@ function updatePartnerBenefits($partnerName) {
         $stmt->execute([$partnerName]);
         $percentage = $stmt->fetchColumn();
 
-        if (!$percentage) {
+        // Permitir porcentaje 0.00 como válido; solo falla si no existe (false/null)
+        if ($percentage === false || $percentage === null) {
             throw new Exception("No se encontró el porcentaje para el socio");
         }
+        $percentage = (float)$percentage;
 
         // 2. Calcular beneficios base (envíos entregados × 2500)
         $stmt = $pdo->query("

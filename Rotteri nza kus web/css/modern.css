@@ -1,0 +1,194 @@
+:root{--bg:#0b132b;--surface:#1c2541;--muted:#3a506b;--accent:#5bc0be;--accent-2:#ffd166;--error:#ef476f;--text:#e5e7eb;--text-muted:#94a3b8;--card-radius:16px;--shadow:0 10px 30px rgba(0,0,0,.25)}
+/* Brand gradients (built from the same palette) */
+:root{--grad-brand: linear-gradient(135deg, #0b132b 0%, #1c2541 50%, #3a506b 100%); --grad-surface: linear-gradient(180deg, rgba(28,37,65,.96), rgba(28,37,65,.88)); --grad-accent: linear-gradient(135deg, #ffd166 0%, #5bc0be 100%)}
+/* Derived translucent variants from the existing palette */
+:root{--accent-18: rgba(91,192,190,.18); --accent-2-18: rgba(255,209,102,.18); --error-12: rgba(239,71,111,.12)}
+/* Aliases to user-facing color variables for prompts/tools */
+:root{
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-accent-teal: var(--accent);
+  --color-accent-amber: var(--accent-2);
+  --color-error: var(--error);
+  --color-success: #27ae60;
+  --color-info: #3498db;
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --alpha-5: rgba(0,0,0,0.05);
+  --alpha-10: rgba(0,0,0,0.1);
+  --alpha-20: rgba(0,0,0,0.2);
+  --alpha-40: rgba(0,0,0,0.4);
+  --alpha-light-10: rgba(255,255,255,0.1);
+  --alpha-light-20: rgba(255,255,255,0.2);
+  --alpha-light-40: rgba(255,255,255,0.4);
+  --grad-brand: linear-gradient(135deg, var(--color-bg), var(--color-surface), var(--color-muted));
+  --grad-surface: linear-gradient(180deg, rgba(28,37,65,0.9), rgba(28,37,65,0.7));
+  --grad-accent-primary: linear-gradient(135deg, var(--color-accent-amber), var(--color-accent-teal));
+  --grad-accent-alt: linear-gradient(135deg, rgba(91,192,190,0.85), rgba(255,209,102,0.85));
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+/* Animated, layered background for a modern store feel (lightweight + respects reduced motion) */
+body{
+  font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+  /* Layered gradients: subtle moving blobs + base gradient */
+  background-image:
+    radial-gradient(closest-side at 10% 20%, var(--accent-18), transparent 70%),
+    radial-gradient(closest-side at 90% 80%, var(--accent-2-18), transparent 70%),
+    radial-gradient(closest-side at 50% 50%, var(--error-12), transparent 65%),
+    linear-gradient(180deg,#0b132b 0%,#0e1a3a 100%);
+  background-repeat: no-repeat;
+  background-size: 40% 40%, 45% 45%, 35% 35%, cover;
+  background-position: 0% 0%, 100% 100%, 50% 50%, center;
+  color:var(--text);
+  scroll-behavior:smooth;
+  animation: bg-pan 42s ease-in-out infinite alternate;
+  will-change: background-position;
+}
+
+@keyframes bg-pan{
+  0%{background-position: 0% 0%, 100% 100%, 50% 50%, center}
+  33%{background-position: 12% 8%, 88% 92%, 46% 54%, center}
+  66%{background-position: 18% 22%, 82% 78%, 54% 46%, center}
+  100%{background-position: 0% 18%, 100% 82%, 50% 50%, center}
+}
+
+@media (prefers-reduced-motion: reduce){
+  body{animation: none}
+}
+img{max-width:100%;display:block}
+
+/* Utilities to apply gradients quickly */
+.bg-gradient-brand{background:var(--grad-brand)!important}
+.bg-gradient-surface{background:var(--grad-surface)!important}
+.btn-gradient-accent{background:var(--grad-accent-primary)!important;color:var(--color-bg)!important;font-weight:700;border:0;border-radius:12px;padding:.75rem 1.1rem;transition:all .2s ease}
+.btn-gradient-accent:hover{background:var(--grad-accent-alt)!important;box-shadow:0 0 12px var(--alpha-light-20)}
+.btn-gradient-accent:active{transform:scale(.98)}
+.btn-gradient-accent:focus{outline:2px solid var(--color-accent-amber);outline-offset:2px}
+
+/* rk- prefixed utilities to avoid collisions */
+.rk-card{background:var(--grad-surface);border:1px solid var(--alpha-light-10);border-radius:.75rem;box-shadow:0 4px 12px var(--alpha-20);padding:1.5rem;color:var(--color-text)}
+.rk-input-dark{background:var(--color-surface);border:1px solid var(--alpha-light-20);border-radius:.5rem;color:var(--color-text);padding:.6rem .8rem}
+.rk-input-dark:focus{border-color:var(--color-accent-teal);outline:none;box-shadow:0 0 0 3px var(--alpha-light-20)}
+.rk-badge{display:inline-block;padding:.25rem .75rem;border-radius:999px;font-size:.75rem;font-weight:600}
+.rk-badge-dark{background:var(--color-muted);color:var(--color-text);border:1px solid var(--alpha-light-20)}
+.rk-badge-accent{background:var(--color-accent-teal);color:var(--color-bg)}
+
+/* Generic counterparts for direct use in markup */
+.card{background:var(--grad-surface);border:1px solid var(--alpha-light-10);border-radius:.75rem;box-shadow:0 4px 12px var(--alpha-20);padding:1.5rem;color:var(--color-text)}
+.input-dark{background:var(--color-surface);border:1px solid var(--alpha-light-20);border-radius:.5rem;color:var(--color-text);padding:.5rem .75rem}
+.input-dark:focus{border-color:var(--color-accent-teal);outline:none;box-shadow:0 0 0 3px var(--alpha-light-20)}
+.badge{display:inline-block;padding:.25rem .75rem;border-radius:999px;font-size:.75rem;font-weight:500}
+.badge-dark{background:var(--color-muted);color:var(--color-text);border:1px solid var(--alpha-light-20)}
+.badge-accent{background:var(--color-accent-teal);color:var(--color-bg)}
+
+/* Light background for admin main container to avoid dark-on-dark issues */
+.admin-container{background:transparent}
+.admin-header{background:#2c3e50;color:#fff}
+
+/* Header/Menu styles removed intentionally */
+
+/* Dropdown styles removed intentionally */
+
+/* Mobile header styles removed intentionally */
+
+/* Hero */
+.hero{position:relative;overflow:hidden}
+.hero .container{position:relative}
+.hero:before,.hero:after{content:"";position:absolute;border-radius:50%;filter:blur(40px);opacity:.35}
+.hero:before{width:380px;height:380px;background:radial-gradient(closest-side at 30% 30%, var(--accent), transparent 70%);top:-80px;left:-80px}
+.hero:after{width:420px;height:420px;background:radial-gradient(closest-side at 70% 70%, var(--accent-2), transparent 70%);bottom:-120px;right:-120px}
+.hero .hero-content{display:grid;grid-template-columns:1.1fr .9fr;gap:2rem;align-items:center;padding:2.5rem 0}
+.hero .hero-content h2{font-size:clamp(1.6rem,2.5vw,2.2rem);margin:0 0 .5rem 0}
+.hero .hero-content p{color:var(--text-muted);margin:0 0 1rem 0}
+.hero .hero-banner{border-radius:20px;box-shadow:var(--shadow);transform:translateZ(0);transition:transform .4s ease, box-shadow .4s ease}
+.hero .hero-banner:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,.35)}
+
+@media (max-width: 900px){
+  .hero .hero-content{grid-template-columns:1fr}
+}
+
+/* Filters */
+.filters{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin:1rem 0 1.25rem}
+.filters select,.filters input{appearance:none;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--text);padding:.6rem .8rem;border-radius:12px;outline:none;transition:all .2s ease}
+.filters select:focus,.filters input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,192,190,.25)}
+
+/* Products */
+.products{position:relative}
+.products .section-title{font-size:1.4rem;margin:0 0 .25rem 0}
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem}
+.product-card{background:linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85));border:1px solid rgba(255,255,255,.06);border-radius:var(--card-radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
+.product-card:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(0,0,0,.35);border-color:rgba(255,255,255,.15)}
+.product-image{position:relative;aspect-ratio:3/2;overflow:hidden}
+.product-image img{width:100%;height:100%;object-fit:cover}
+.product-info{padding:.8rem .85rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
+.product-name{margin:0;font-size:1rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-category{margin:0;color:var(--accent);font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-description{margin:0;color:var(--text-muted);font-size:.92rem;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(1.35em*2)}
+.product-details{display:flex;justify-content:space-between;align-items:center;margin-top:.1rem}
+.product-price{color:#fff;font-weight:700}
+.product-weight{color:var(--text-muted);font-size:.9rem}
+.product-actions{display:flex;gap:.5rem;margin-top:auto}
+.products-grid .tag-chip{background:rgba(255,255,255,.08);color:#cbd5e1;padding:4px 8px;border-radius:12px;font-size:.8rem;border:1px solid rgba(255,255,255,.12)}
+.product-weight{background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); padding: 2px 8px; border-radius: 999px}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem .8rem;border-radius:12px;border:1px solid transparent;color:#0b132b;background:var(--accent-2);font-weight:700;cursor:pointer;transition:all .2s ease}
+.btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn.btn-cart{background:var(--accent);color:#092024}
+.btn.btn-buy{background:var(--accent-2);color:#3a2b09}
+
+/* Floating Action Buttons */
+.fab{position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#1c2541,#131b33);color:#fff;border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 30px rgba(0,0,0,.35);cursor:pointer;z-index:60;transition:transform .2s ease, box-shadow .2s ease, background .2s ease}
+.fab:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.fab .badge{position:absolute;top:-6px;right:-6px;background:var(--error);color:#fff;border-radius:999px;padding:.15rem .35rem;font-size:.72rem;border:2px solid #0b132b}
+.fab.whatsapp-fab{bottom:86px;background:linear-gradient(180deg,#25d366,#128c7e)}
+.fab.cart-fab{bottom:154px}
+.scroll-top{opacity:0;pointer-events:none;transform:translateY(12px)}
+.scroll-top.show{opacity:1;pointer-events:auto;transform:translateY(0)}
+
+/* Footer */
+.footer{background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08)}
+.footer p{color:var(--text-muted)}
+
+/* Containers */
+.container{max-width:1200px;margin:0 auto;padding:0 16px}
+
+/* Admin content dark theme overrides */
+.admin-content{
+  background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85)) !important;
+  color: var(--text) !important;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.admin-content h1,.admin-content h2,.admin-content h3,.admin-content h4,.admin-content h5,.admin-content h6{color:var(--text) !important}
+.admin-content p,.admin-content li,.admin-content label,.admin-content .text{color:var(--text-muted) !important}
+.admin-content a{color: var(--accent-2)}
+.admin-content a:hover{filter:brightness(1.05)}
+.admin-content input,.admin-content select,.admin-content textarea{
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.12);
+}
+.admin-content input::placeholder,.admin-content textarea::placeholder{color:var(--text-muted)}
+.admin-content table{color:var(--text)}
+.admin-content th{background: rgba(255,255,255,.06); color: var(--text)}
+.admin-content td{color: var(--text); border-bottom: 1px solid rgba(255,255,255,.08)}
+/* Stronger specificity for orders table */
+.admin-content .orders-table th{background: rgba(255,255,255,.06) !important; color: var(--text) !important}
+.admin-content .orders-table td{color: var(--text) !important; border-bottom: 1px solid rgba(255,255,255,.12) !important}
+/* Dark form blocks inside admin content */
+.admin-content .admin-form{background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85)); color: var(--text); border:1px solid rgba(255,255,255,.06); box-shadow: var(--shadow)}
+
+/* Global dark modal override (site-wide) */
+.modal .modal-content{background: linear-gradient(180deg, rgba(28,37,65,.98), rgba(28,37,65,.92)) !important; color: var(--text) !important; border:1px solid rgba(255,255,255,.08) !important; box-shadow: 0 20px 50px rgba(0,0,0,.45) !important}
+.modal .close{color:#cbd5e1}
+.modal .close:hover{color:#fff}
+
+/* Dark "no products" and generic white blocks */
+.no-products{background: linear-gradient(180deg, rgba(28,37,65,.95), rgba(28,37,65,.85)) !important; color: var(--text) !important; border:1px solid rgba(255,255,255,.08) !important}
+
+/* Inputs global dark tweak (outside admin if needed) */
+input,select,textarea{background-color: rgba(255,255,255,.06); color: var(--text)}
+input::placeholder,textarea::placeholder{color: var(--text-muted)}

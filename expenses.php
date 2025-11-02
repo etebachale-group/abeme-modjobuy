@@ -5,6 +5,14 @@ require_once 'includes/functions.php';
 
 // Verificar que el usuario esté autenticado
 requireAuth();
+// Solo super_admin o usuarios con permiso explícito pueden acceder a gastos
+if (($_SESSION['role'] ?? 'user') !== 'super_admin') {
+    if (!function_exists('currentUserHasPermission') || !currentUserHasPermission($pdo, 'access_expenses')) {
+        http_response_code(403);
+        echo 'Acceso de super administrador requerido';
+        exit;
+    }
+}
 
 // Definir los socios
 $partners = [

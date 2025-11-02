@@ -250,22 +250,100 @@ function createAdminIfNotExists($pdo) {
             id INT AUTO_INCREMENT PRIMARY KEY,
             email VARCHAR(255) NOT NULL UNIQUE,
             password VARCHAR(255) NOT NULL,
-            role VARCHAR(50) NOT NULL DEFAULT 'user'
+            role VARCHAR(50) NOT NULL DEFAULT 'user',
+            partner_name VARCHAR(100) NULL,
+            active TINYINT(1) NOT NULL DEFAULT 1
         )");
         
         // Crear usuario administrador por defecto
+        // Crear admin por defecto
         $email = 'admin@admin.com';
         $password = password_hash('admin123', PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO users (email, password, role) VALUES (?, ?, 'admin')");
         $stmt->execute([$email, $password]);
+
+    // Sembrar super admin solicitado si no existe
+    $supEmail = 'etebachalegroup@gmail.com';
+    $supPass = 'mX7#Aq!D9v^H5tPz@w3*LuG2s$RkJ8yBn%fC1eQxZo6T!MhKjVr4pW0Nd^Ub';
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$supEmail]);
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $stmt2 = $pdo->prepare("INSERT INTO users (email, password, role, active) VALUES (?, ?, 'super_admin', 1)");
+            $stmt2->execute([$supEmail, password_hash($supPass, PASSWORD_DEFAULT)]);
+        } else {
+            // Asegurar que tenga rol super_admin
+            $stmt3 = $pdo->prepare("UPDATE users SET role = 'super_admin', active = 1 WHERE email = ?");
+            $stmt3->execute([$supEmail]);
+        }
+
+    // Nota: No desactivar otros usuarios automáticamente; mantener activos los usuarios existentes.
         
         return true;
+    }
+    // Asegurar columnas necesarias
+    try {
+        $cols = $pdo->query("DESCRIBE users")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('partner_name', $cols)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN partner_name VARCHAR(100) NULL");
+        }
+        if (!in_array('role', $cols)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'user'");
+        }
+        if (!in_array('active', $cols)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1");
+        }
+        // Migración puntual: si existe el super admin anterior, actualizarlo al nuevo email/contraseña
+        try {
+            $oldEmail = 'admin.ops+llfavj@ecuacelebs.com';
+            $newEmail = 'etebachalegroup@gmail.com';
+            $newPass = 'mX7#Aq!D9v^H5tPz@w3*LuG2s$RkJ8yBn%fC1eQxZo6T!MhKjVr4pW0Nd^Ub';
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$oldEmail]);
+            if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $stmtU = $pdo->prepare("UPDATE users SET email = ?, password = ?, role = 'super_admin', active = 1 WHERE id = ?");
+                $stmtU->execute([$newEmail, password_hash($newPass, PASSWORD_DEFAULT), $row['id']]);
+            }
+        } catch (Exception $ie) { /* ignore */ }
+
+        // Asegurar que el super admin objetivo exista y tenga credenciales correctas
+        try {
+            $targetEmail = 'etebachalegroup@gmail.com';
+            $targetPass = 'mX7#Aq!D9v^H5tPz@w3*LuG2s$RkJ8yBn%fC1eQxZo6T!MhKjVr4pW0Nd^Ub';
+            $stmt = $pdo->prepare("SELECT id, role, active, password FROM users WHERE email = ?");
+            $stmt->execute([$targetEmail]);
+            if (!($row = $stmt->fetch(PDO::FETCH_ASSOC))) {
+                // Crear si no existe
+                $stmtI = $pdo->prepare("INSERT INTO users (email, password, role, partner_name, active) VALUES (?, ?, 'super_admin', NULL, 1)");
+                $stmtI->execute([$targetEmail, password_hash($targetPass, PASSWORD_DEFAULT)]);
+            } else {
+                // Actualizar si la contraseña difiere o el rol/activo no está correcto
+                $needPass = !password_verify($targetPass, $row['password'] ?? '');
+                $needRole = ($row['role'] ?? 'user') !== 'super_admin';
+                $needActive = (string)($row['active'] ?? '1') !== '1';
+                if ($needPass || $needRole || $needActive) {
+                    $sql = "UPDATE users SET ";
+                    $params = [];
+                    if ($needPass) { $sql .= "password = ?, "; $params[] = password_hash($targetPass, PASSWORD_DEFAULT); }
+                    if ($needRole) { $sql .= "role = 'super_admin', "; }
+                    if ($needActive) { $sql .= "active = 1, "; }
+                    // trim trailing comma
+                    $sql = rtrim($sql, ", ") . " WHERE id = ?";
+                    $params[] = $row['id'];
+                    $stmtU = $pdo->prepare($sql);
+                    $stmtU->execute($params);
+                }
+            }
+            // Nota: Evitar desactivar usuarios no-super_admin automáticamente.
+        } catch (Exception $ie2) { /* ignore */ }
+    // No se requiere migración especial para super_admin; se usará el campo role existente.
+    } catch (Exception $e) {
+        // ignore
     }
     return false;
 }
 
 function authenticateUser($pdo, $email, $password) {
-    $stmt = $pdo->prepare("SELECT id, email, password FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, email, password, role, partner_name FROM users WHERE email = ? AND (active IS NULL OR active = 1)");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -493,5 +571,194 @@ function getBenefitHistory($pdo, $partner_name = null) {
 function getExpenses($pdo) {
     $stmt = $pdo->query("SELECT * FROM expenses ORDER BY date DESC, created_at DESC");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ============================
+// Permisos por usuario (granulares)
+// ============================
+// Estructura: Tabla user_permissions con pares (user_id, permission)
+// Notas:
+//  - Los super_admin tienen todos los permisos implícitos.
+//  - Para admins/users, se consultan los permisos almacenados.
+
+function ensureUserPermissionsTable(PDO $pdo): void {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS user_permissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            permission VARCHAR(64) NOT NULL,
+            UNIQUE KEY uniq_user_perm (user_id, permission)
+        )");
+    } catch (Exception $e) {
+        // ignore
+    }
+}
+
+/**
+ * Obtener lista de permisos para un usuario dado.
+ * @return string[] Array de permisos (claves)
+ */
+function getUserPermissions(PDO $pdo, int $userId): array {
+    if ($userId <= 0) return [];
+    ensureUserPermissionsTable($pdo);
+    try {
+        $stmt = $pdo->prepare("SELECT permission FROM user_permissions WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        return array_values(array_filter(array_map('strval', $rows)));
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+/**
+ * Reemplaza los permisos de un usuario por el conjunto dado.
+ */
+function setUserPermissions(PDO $pdo, int $userId, array $permissions): bool {
+    if ($userId <= 0) return false;
+    ensureUserPermissionsTable($pdo);
+    // Normalizar y deduplicar
+    $perms = [];
+    foreach ($permissions as $p) {
+        $p = trim((string)$p);
+        if ($p !== '') { $perms[$p] = true; }
+    }
+    $perms = array_keys($perms);
+    try {
+        $startedTx = method_exists($pdo, 'inTransaction') && $pdo->inTransaction() ? false : true;
+        if ($startedTx) { $pdo->beginTransaction(); }
+        $pdo->prepare("DELETE FROM user_permissions WHERE user_id = ?")->execute([$userId]);
+        if (!empty($perms)) {
+            $ins = $pdo->prepare("INSERT INTO user_permissions (user_id, permission) VALUES (?, ?)");
+            foreach ($perms as $p) { $ins->execute([$userId, $p]); }
+        }
+        if ($startedTx && method_exists($pdo, 'inTransaction') && $pdo->inTransaction()) { $pdo->commit(); }
+        return true;
+    } catch (Throwable $e) {
+        if (method_exists($pdo, 'inTransaction') && $pdo->inTransaction()) { try { $pdo->rollBack(); } catch (Exception $ie) {} }
+        return false;
+    }
+}
+
+/**
+ * Verificar si el usuario tiene un permiso específico.
+ * Los super_admin tienen acceso a todo.
+ */
+function userHasPermission(PDO $pdo, int $userId, string $permission): bool {
+    if ($userId <= 0) return false;
+    // Bypass para super_admin
+    $role = $_SESSION['role'] ?? 'user';
+    if ($role === 'super_admin') return true;
+    ensureUserPermissionsTable($pdo);
+    try {
+        $stmt = $pdo->prepare("SELECT 1 FROM user_permissions WHERE user_id = ? AND permission = ? LIMIT 1");
+        $stmt->execute([$userId, $permission]);
+        return (bool)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
+ * Azúcar sintáctico: permiso para el usuario actual (sesión requerida)
+ */
+function currentUserHasPermission(PDO $pdo, string $permission): bool {
+    $uid = (int)($_SESSION['user_id'] ?? 0);
+    return userHasPermission($pdo, $uid, $permission);
+}
+
+// ============================
+// Publicidad: Carrusel de Banners
+// ============================
+
+function getActiveAds($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT id, image_path, title, link_url FROM ad_banners WHERE is_active = 1 ORDER BY sort_order ASC, id DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function getAllAds($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT * FROM ad_banners ORDER BY sort_order ASC, id DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function createAd($pdo, array $data) {
+    $sql = "INSERT INTO ad_banners (image_path, title, link_url, is_active, sort_order) VALUES (:image_path, :title, :link_url, :is_active, :sort_order)";
+    $stmt = $pdo->prepare($sql);
+    $payload = [
+        ':image_path' => $data['image_path'] ?? '',
+        ':title' => $data['title'] ?? null,
+        ':link_url' => $data['link_url'] ?? null,
+        ':is_active' => isset($data['is_active']) ? (int)!!$data['is_active'] : 1,
+        ':sort_order' => isset($data['sort_order']) ? (int)$data['sort_order'] : 0,
+    ];
+    if ($payload[':image_path'] === '') return false;
+    try {
+        $ok = $stmt->execute($payload);
+        return $ok ? (int)$pdo->lastInsertId() : false;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function toggleAdActive($pdo, int $id, bool $active) {
+    try {
+        $stmt = $pdo->prepare("UPDATE ad_banners SET is_active = ? WHERE id = ?");
+        return $stmt->execute([$active ? 1 : 0, $id]);
+    } catch (Exception $e) { return false; }
+}
+
+function deleteAd($pdo, int $id) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM ad_banners WHERE id = ?");
+        return $stmt->execute([$id]);
+    } catch (Exception $e) { return false; }
+}
+
+function reorderAd($pdo, int $id, int $sort_order) {
+    try {
+        $stmt = $pdo->prepare("UPDATE ad_banners SET sort_order = ? WHERE id = ?");
+        return $stmt->execute([$sort_order, $id]);
+    } catch (Exception $e) { return false; }
+}
+
+function updateAd($pdo, int $id, array $data) {
+    // Only allow updating these fields (no image change here)
+    $fields = [];
+    $params = [];
+    if (array_key_exists('title', $data)) { $fields[] = 'title = ?'; $params[] = (string)$data['title']; }
+    if (array_key_exists('link_url', $data)) { $fields[] = 'link_url = ?'; $params[] = (string)$data['link_url']; }
+    if (array_key_exists('is_active', $data)) { $fields[] = 'is_active = ?'; $params[] = (int)!!$data['is_active']; }
+    if (array_key_exists('sort_order', $data)) { $fields[] = 'sort_order = ?'; $params[] = (int)$data['sort_order']; }
+    if (empty($fields)) return true; // nothing to update
+    $params[] = $id;
+    $sql = 'UPDATE ad_banners SET ' . implode(', ', $fields) . ' WHERE id = ?';
+    try {
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
+    } catch (Exception $e) { return false; }
+}
+
+function updateAdImage($pdo, int $id, string $image_path) {
+    if ($id <= 0 || $image_path === '') return false;
+    try {
+        $stmt = $pdo->prepare("UPDATE ad_banners SET image_path = ? WHERE id = ?");
+        return $stmt->execute([$image_path, $id]);
+    } catch (Exception $e) { return false; }
+}
+
+function getAdById($pdo, int $id) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM ad_banners WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    } catch (Exception $e) { return null; }
 }
 ?>

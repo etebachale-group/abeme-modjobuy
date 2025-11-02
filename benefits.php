@@ -57,6 +57,51 @@
 
     // Beneficio neto = beneficio total - gastos
     $netProfit = $totalProfit - $totalExpenses;
+
+    // Calcular total pagado a socios desde los monederos
+    $totalPaidOut = 0;
+    try {
+        $stmt = $pdo->query("SELECT SUM(amount) as total_paid_out FROM partner_wallet_transactions WHERE type = 'deposit'");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $totalPaidOut = $result['total_paid_out'] ?? 0;
+    } catch (Exception $e) {
+        // La tabla aún no existe, no hacer nada
+    }
+
+    // Saldo real disponible = Beneficio Neto - Total Pagado
+    $realNetProfit = $netProfit - $totalPaidOut;
+
+    // Asegurar tabla partner_benefits y filas de socios; luego obtener saldos actuales
+    try {
+        // Crear tabla si no existe (mínimo necesario)
+        $pdo->exec("CREATE TABLE IF NOT EXISTS partner_benefits (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            partner_name VARCHAR(100) NOT NULL UNIQUE,
+            percentage DECIMAL(5,2) NOT NULL,
+            total_earnings DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+            current_balance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+
+        // Asegurar que existan filas para cada socio definido arriba
+        $checkStmt = $pdo->prepare("SELECT partner_name FROM partner_benefits WHERE partner_name = ?");
+        $insertStmt = $pdo->prepare("INSERT IGNORE INTO partner_benefits (partner_name, percentage) VALUES (?, ?)");
+        foreach ($partners as $pName => $pct) {
+            $checkStmt->execute([$pName]);
+            if (!$checkStmt->fetch(PDO::FETCH_ASSOC)) {
+                $insertStmt->execute([$pName, $pct]);
+            }
+        }
+
+        // Obtener datos actuales de socios
+        $partnerBalances = [];
+        $stmt = $pdo->query("SELECT partner_name, percentage, total_earnings, current_balance FROM partner_benefits");
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $partnerBalances[$row['partner_name']] = $row;
+        }
+    } catch (Exception $e) {
+        $partnerBalances = [];
+    }
     ?>
 
     <!-- Encabezado -->
@@ -72,12 +117,30 @@
             <a href="admin.php" class="back-button">
                 <i class="fas fa-arrow-left"></i> Volver
             </a>
+            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin'): ?>
+            <button id="btnResetBalances" class="back-button" style="margin-left:10px; background:#b71c1c; border-color:#b71c1c;">
+                <i class="fas fa-rotate-left"></i> Reiniciar saldos
+            </button>
+            <button id="btnSeedWallets" class="back-button" style="margin-left:10px; background:#1b5e20; border-color:#1b5e20;">
+                <i class="fas fa-seedling"></i> Cargar monederos
+            </button>
+            <button id="btnRemoveWithdrawals" class="back-button" style="margin-left:10px; background:#4e342e; border-color:#4e342e;">
+                <i class="fas fa-eraser"></i> Eliminar retiros
+            </button>
+            <button id="btnClearPendingPayments" class="back-button" style="margin-left:10px; background:#37474f; border-color:#37474f;">
+                <i class="fas fa-trash"></i> Borrar pagos pendientes
+            </button>
+            <button id="btnClearAllPayments" class="back-button" style="margin-left:10px; background:#263238; border-color:#263238;">
+                <i class="fas fa-trash-alt"></i> Borrar TODOS los pagos
+            </button>
+            <?php endif; ?>
         </nav>
     </header>
 
-    <main class="main-content">
+    <main class="main-content wallet-page">
         <section class="dashboard-section">
             <div class="stats-summary">
+                <?php if (currentUserHasPermission($pdo, 'view_ingresos_totales')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-money-bill-wave"></i>
@@ -87,7 +150,9 @@
                         <p class="stat-value">XAF <?php echo number_format($totalRevenue, 2, ',', '.'); ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (currentUserHasPermission($pdo, 'view_beneficios_totales')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-chart-line"></i>
@@ -97,7 +162,9 @@
                         <p class="stat-value">XAF <?php echo number_format($totalProfit, 2, ',', '.'); ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (currentUserHasPermission($pdo, 'view_envios_entregados')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-box"></i>
@@ -107,6 +174,9 @@
                         <p class="stat-value"><?php echo $totalShipments; ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
+
+                <?php if (currentUserHasPermission($pdo, 'view_kilos_entregados')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-weight-hanging"></i>
@@ -116,7 +186,9 @@
                         <p class="stat-value"><?php echo number_format($totalKilos, 2, ',', '.'); ?> kg</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (currentUserHasPermission($pdo, 'view_gastos_totales')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-dollar-sign"></i>
@@ -126,7 +198,9 @@
                         <p class="stat-value">XAF <?php echo number_format($totalExpenses, 2, ',', '.'); ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (currentUserHasPermission($pdo, 'view_beneficio_neto')): ?>
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-hand-holding-usd"></i>
@@ -136,6 +210,19 @@
                         <p class="stat-value">XAF <?php echo number_format($netProfit, 2, ',', '.'); ?></p>
                     </div>
                 </div>
+                <?php endif; ?>
+
+                <?php if (currentUserHasPermission($pdo, 'view_saldo_real_disponible')): ?>
+                <div class="stat-card" style="background-color: #e8f5e9;">
+                    <div class="stat-icon" style="color: #2e7d32;">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Saldo Real Disponible</h3>
+                        <p class="stat-value" style="color: #2e7d32;">XAF <?php echo number_format($realNetProfit, 2, ',', '.'); ?></p>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             </div>
 
@@ -160,10 +247,16 @@
                     'FONDOS DE SOCIOS' => '#bbdefb'     // Azul muy claro
                 ];
                 ?>
-                <div class="partners-progress">
-                    <?php foreach ($partners as $name => $percentage): ?>
+        <div class="partners-progress">
+            <?php foreach ($partners as $name => $percentage): ?>
                         <?php
-                        $amount = $netProfit * ($percentage / 100);
+            // Saldo disponible real del socio
+        $currentBalance = isset($partnerBalances[$name]) ? (float)$partnerBalances[$name]['current_balance'] : ($netProfit * ($percentage / 100));
+    $role = $_SESSION['role'] ?? 'user';
+    $own = trim((string)($_SESSION['partner_name'] ?? ''));
+    $isSuper = ($role === 'super_admin');
+    $isOwn = (strcasecmp($own, trim($name)) === 0);
+    $canSee = $isSuper || $isOwn;
                         $isMainPartner = in_array($name, ['FERNANDO CHALE', 'MARIA CARMEN NSUE', 'GENEROSA ABEME']);
                         $color = $partnerColors[$name];
                         ?>
@@ -173,7 +266,13 @@
                                     <span class="partner-name"><?php echo $name; ?></span>
                                     <div class="progress-stats">
                                         <span class="percentage-badge"><?php echo $percentage; ?>%</span>
-                                        <span class="amount">XAF <?php echo number_format($amount, 2, ',', '.'); ?></span>
+                    <span class="amount" title="Saldo disponible" <?php echo $canSee ? ('data-partner="' . htmlspecialchars($name) . '"') : ''; ?>>
+                        <?php if ($canSee): ?>
+                        XAF <?php echo number_format($currentBalance, 2, ',', '.'); ?>
+                        <?php else: ?>
+                        —
+                        <?php endif; ?>
+                    </span>
                                     </div>
                                 </div>
                                 <?php if ($isMainPartner): ?>
@@ -195,20 +294,26 @@
             <div class="detailed-view">
                 <h2>Detalle de Beneficios por Socio</h2>
                 <div class="table-responsive">
-                    <table class="benefits-table">
+                    <table class="table-dark">
                         <thead>
                             <tr>
                                 <th>Socio</th>
                                 <th>Porcentaje</th>
-                                <th>Monto (XAF)</th>
+                                <th>Saldo Disponible (XAF)</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($partners as $name => $percentage): ?>
                             <?php 
-                            $amount = $netProfit * ($percentage / 100);
+                            $currentBalance = isset($partnerBalances[$name]) ? (float)$partnerBalances[$name]['current_balance'] : ($netProfit * ($percentage / 100));
                             $isMainPartner = in_array($name, ['FERNANDO CHALE', 'MARIA CARMEN NSUE', 'GENEROSA ABEME']);
+                            // Recalcular visibilidad por fila para evitar usar valores residuales de otros bucles
+                            $role = $_SESSION['role'] ?? 'user';
+                            $own = trim((string)($_SESSION['partner_name'] ?? ''));
+                            $isSuper = ($role === 'super_admin');
+                            $isOwn = (strcasecmp($own, $name) === 0);
+                            $canSee = $isSuper || $isOwn;
                             ?>
                             <tr class="<?php echo $isMainPartner ? 'main-partner-row' : ''; ?>">
                                 <td>
@@ -220,18 +325,53 @@
                                     </div>
                                 </td>
                                 <td><?php echo $percentage; ?>%</td>
-                                <td>XAF <?php echo number_format($amount, 2, ',', '.'); ?></td>
+                                <td <?php echo $canSee ? ('data-partner="' . htmlspecialchars($name) . '"') : ''; ?>>
+                                    <?php if ($canSee): ?>
+                                        XAF <?php echo number_format($currentBalance, 2, ',', '.'); ?>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <div class="btn-group">
+                                        <?php if (($role ?? 'user') === 'super_admin' || $isOwn): ?>
                                         <button class="btn btn-primary" onclick="viewDetails('<?php echo $name; ?>')">
                                             <i class="fas fa-eye"></i> Detalles
                                         </button>
-                                        <button class="btn btn-success" onclick="requestPayment('<?php echo htmlspecialchars($name); ?>', <?php echo $amount; ?>)">
-                                            <i class="fab fa-whatsapp"></i> Solicitar
+                                        <?php else: ?>
+                                        <button class="btn btn-primary" disabled title="Solo tu socio o super admin">
+                                            <i class="fas fa-eye"></i> Detalles
                                         </button>
-                                        <button class="btn btn-info" onclick="confirmPayment('<?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?>', <?php echo $amount; ?>)">
-                                            <i class="fas fa-check-circle"></i> Confirmar
-                                        </button>
+                                        <?php endif; ?>
+                                        <?php /* variables $role, $isSuper, $isOwn ya calculadas arriba por fila */ ?>
+                                        <?php if ($name === 'CAJA'): ?>
+                                            <?php if ($isSuper): ?>
+                                                <a class="btn" href="caja.php"><i class="fas fa-wallet"></i> Panel</a>
+                                            <?php else: ?>
+                                                <button class="btn" disabled title="Solo super admin"><i class="fas fa-wallet"></i> Panel</button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <?php if ($isSuper || $isOwn): ?>
+                                                <a class="btn" href="<?php echo 'partner_wallet.php?partner=' . urlencode($name); ?>">
+                                                    <i class="fas fa-wallet"></i> Panel
+                                                </a>
+                                            <?php else: ?>
+                                                <button class="btn" disabled title="Solo tu monedero"><i class="fas fa-wallet"></i> Panel</button>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+
+                                        <?php if ($isSuper || $isOwn): ?>
+                                            <button class="btn btn-success" onclick="requestPayment('<?php echo htmlspecialchars($name); ?>', <?php echo $currentBalance; ?>)">
+                                                <i class="fab fa-whatsapp"></i> Solicitar
+                                            </button>
+                                        <?php else: ?>
+                                            <button class="btn btn-success" disabled title="Solo tu monedero"><i class="fab fa-whatsapp"></i> Solicitar</button>
+                                        <?php endif; ?>
+                                        <?php if ($isSuper): ?>
+                                            <button class="btn btn-info" onclick="confirmPayment('<?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?>', <?php echo $currentBalance; ?>)"><i class="fas fa-piggy-bank"></i> Depositar</button>
+                                        <?php else: ?>
+                                            <button class="btn btn-info" disabled title="Solo super admin"><i class="fas fa-piggy-bank"></i> Depositar</button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -267,28 +407,153 @@
                     </div>
                 </div>
 
-                <div class="payment-history">
-                    <h4>Historial de Pagos</h4>
-                    <div class="table-responsive">
-                        <table id="paymentsHistory" class="table">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Monto</th>
-                                    <th>Estado</th>
-                                    <th>Balance Anterior</th>
-                                    <th>Nuevo Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
+                <!-- Historial de pagos eliminado por simplificación del monedero -->
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/benefits.js"></script>
+        <script src="js/benefits.js"></script>
+        <script>
+            (function(){
+                const els = Array.from(document.querySelectorAll('[data-partner]'));
+                if (!els.length) return;
+                const fmt = (n) => 'XAF ' + Number(n).toLocaleString('es-GQ',{minimumFractionDigits:2, maximumFractionDigits:2});
+                let timer = null; let inflight = false;
+                async function tick(){
+                    if (inflight) return; inflight = true;
+                    try {
+                        // Fetch each partner balance in sequence to avoid hammering the server
+                        for (const el of els) {
+                            const p = el.getAttribute('data-partner');
+                            const url = 'api/get_wallet_balances.php?partner=' + encodeURIComponent(p);
+                            const res = await fetch(url);
+                            const j = await res.json();
+                            if (j && j.success && j.data) {
+                                el.textContent = fmt(j.data.current_balance || 0);
+                            }
+                        }
+                    } catch(e) { /* ignore */ }
+                    finally { inflight = false; }
+                }
+                function start(){ if (!timer) { timer = setInterval(tick, 5000); } }
+                function stop(){ if (timer) { clearInterval(timer); timer = null; } }
+                document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stop(); else { tick(); start(); } });
+                tick(); start();
+            })();
+        </script>
 </body>
 </html>
+<script>
+    (function(){
+        const btn = document.getElementById('btnResetBalances');
+        if (!btn) return;
+        btn.addEventListener('click', async () => {
+            if (!confirm('¿Reiniciar saldos de todos los socios? Esto borrará movimientos de monedero y marcará pagos como no confirmados.')) return;
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reiniciando…';
+            try {
+                                                                const res = await fetch('api/reset_partner_balances.php', {
+                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                                    body: 'scope=all',
+                                    credentials: 'same-origin',
+                                    cache: 'no-cache'
+                                });
+                                                                const txt = await res.text();
+                                                                let data = null; try { data = JSON.parse(txt); } catch {}
+                                                                if (res.ok && data && data.success) { alert('Reinicio completado'); location.reload(); }
+                                                                else {
+                                                                    const msg = data && data.message ? data.message : (txt ? txt.slice(0,200) : 'No se pudo reiniciar');
+                                                                    throw new Error(`HTTP ${res.status} ${res.statusText} | ${msg}`);
+                                                                }
+            } catch (e) {
+                console.error(e); alert('Error: ' + (e.message || 'Error de red'));
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate-left"></i> Reiniciar saldos';
+            }
+        });
+    })();
+
+        // Borrar pagos pendientes
+        (function(){
+            const btn = document.getElementById('btnClearPendingPayments');
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                if (!confirm('¿Borrar TODOS los pagos PENDIENTES? Esta acción no se puede deshacer.')) return;
+                try {
+                    const res = await fetch('api/clear_partner_payments.php?status=pending', { method:'POST', headers:{'Accept':'application/json'}, credentials:'same-origin' });
+                    const j = await res.json();
+                    if (!res.ok || !j.success) throw new Error(j.message || 'Error al borrar pagos pendientes');
+                    alert('Pagos pendientes borrados: ' + (j.deleted||0));
+                    location.reload();
+                } catch(e) { alert('Error: ' + (e.message||'Error de red')); }
+            });
+        })();
+
+        // Borrar todos los pagos
+        (function(){
+            const btn = document.getElementById('btnClearAllPayments');
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                if (!confirm('¿Borrar TODOS los pagos (pendientes y confirmados)? Esta acción no se puede deshacer.')) return;
+                try {
+                    const res = await fetch('api/clear_partner_payments.php?status=all', { method:'POST', headers:{'Accept':'application/json'}, credentials:'same-origin' });
+                    const j = await res.json();
+                    if (!res.ok || !j.success) throw new Error(j.message || 'Error al borrar pagos');
+                    alert('Pagos borrados: ' + (j.deleted||0));
+                    location.reload();
+                } catch(e) { alert('Error: ' + (e.message||'Error de red')); }
+            });
+        })();
+(function(){
+    const btn = document.getElementById('btnSeedWallets');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        if (!confirm('¿Cargar monederos con el saldo pendiente actual de todos los socios?')) return;
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando…';
+        try {
+                                                const res = await fetch('api/seed_wallets_from_pending.php', {
+                            method:'POST',
+                                        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                            body: 'all=1',
+                            credentials: 'same-origin',
+                            cache: 'no-cache'
+                        });
+                                                const txt = await res.text();
+                                                let data = null; try { data = JSON.parse(txt); } catch {}
+                                                if (res.ok && data && data.success) { alert('Monederos cargados'); location.reload(); }
+                                                else {
+                                                    const msg = data && data.message ? data.message : (txt ? txt.slice(0,200) : 'No se pudo cargar');
+                                                    throw new Error(`HTTP ${res.status} ${res.statusText} | ${msg}`);
+                                                }
+        } catch(e) { console.error(e); alert('Error: ' + (e.message || 'Error de red')); }
+        finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-seedling"></i> Cargar monederos'; }
+    });
+})();
+
+(function(){
+    const btn = document.getElementById('btnRemoveWithdrawals');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar retiros de todos los socios y restaurar los saldos de monedero?')) return;
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando…';
+        try {
+                                                const res = await fetch('api/remove_partner_withdrawals.php', {
+                            method:'POST',
+                                        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                            body: 'all=1',
+                            credentials: 'same-origin',
+                            cache: 'no-cache'
+                        });
+                                                const txt = await res.text();
+                                                let data = null; try { data = JSON.parse(txt); } catch {}
+                                                if (res.ok && data && data.success) { alert('Retiros eliminados. Restaurado: ' + (data.restored || 0)); location.reload(); }
+                                                else {
+                                                    const msg = data && data.message ? data.message : (txt ? txt.slice(0,200) : 'No se pudo eliminar');
+                                                    throw new Error(`HTTP ${res.status} ${res.statusText} | ${msg}`);
+                                                }
+        } catch(e) { console.error(e); alert('Error: ' + (e.message || 'Error de red')); }
+        finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-eraser"></i> Eliminar retiros'; }
+    });
+})();
+</script>
